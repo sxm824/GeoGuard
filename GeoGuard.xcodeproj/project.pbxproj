@@ -6,13 +6,49 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		3E13ADCD2F4E6E7800D45B68 /* GooglePlaces in Frameworks */ = {isa = PBXBuildFile; productRef = 3E13ADCC2F4E6E7800D45B68 /* GooglePlaces */; };
+		3E13ADCF2F4E6E7800D45B68 /* GooglePlacesSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 3E13ADCE2F4E6E7800D45B68 /* GooglePlacesSwift */; };
+		3EBB3AC82F4D2B34003E0403 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 3EBB3AC72F4D2B34003E0403 /* FirebaseAuth */; };
+		3EBB3ACA2F4D2B34003E0403 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 3EBB3AC92F4D2B34003E0403 /* FirebaseCore */; };
+		3EBB3ACC2F4D2B34003E0403 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 3EBB3ACB2F4D2B34003E0403 /* FirebaseFirestore */; };
+		3EEB58962F4D08860053B5C5 /* GoogleMaps in Frameworks */ = {isa = PBXBuildFile; productRef = 3EEB58952F4D08860053B5C5 /* GoogleMaps */; };
+		3EFC0BC82F4F9BE7005D3073 /* QUICKSTART.md in Resources */ = {isa = PBXBuildFile; fileRef = 3EFC0BC72F4F9BE7005D3073 /* QUICKSTART.md */; };
+		3EFC0BCA2F4F9C49005D3073 /* GITHUB_SETUP.md in Resources */ = {isa = PBXBuildFile; fileRef = 3EFC0BC92F4F9C49005D3073 /* GITHUB_SETUP.md */; };
+		3EFC0BCC2F4F9C64005D3073 /* PHASE1_COMPLETE.md in Resources */ = {isa = PBXBuildFile; fileRef = 3EFC0BCB2F4F9C64005D3073 /* PHASE1_COMPLETE.md */; };
+		3EFC0BCE2F4F9CA2005D3073 /* PRE_PUBLISH_CHECKLIST.md in Resources */ = {isa = PBXBuildFile; fileRef = 3EFC0BCD2F4F9CA2005D3073 /* PRE_PUBLISH_CHECKLIST.md */; };
+		3EFC0BD02F4F9D75005D3073 /* START_HERE.md in Resources */ = {isa = PBXBuildFile; fileRef = 3EFC0BCF2F4F9D75005D3073 /* START_HERE.md */; };
+		3EFC0BD22F4F9E9E005D3073 /* README_UPDATED.md in Resources */ = {isa = PBXBuildFile; fileRef = 3EFC0BD12F4F9E9E005D3073 /* README_UPDATED.md */; };
+		3EFC0BD42F4F9F1E005D3073 /* TERMINOLOGY_GUIDE.md in Resources */ = {isa = PBXBuildFile; fileRef = 3EFC0BD32F4F9F1E005D3073 /* TERMINOLOGY_GUIDE.md */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		3E1521C62F4D054800AF4C8C /* GeoGuard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GeoGuard.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3EFC0BC72F4F9BE7005D3073 /* QUICKSTART.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = QUICKSTART.md; sourceTree = "<group>"; };
+		3EFC0BC92F4F9C49005D3073 /* GITHUB_SETUP.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = GITHUB_SETUP.md; sourceTree = "<group>"; };
+		3EFC0BCB2F4F9C64005D3073 /* PHASE1_COMPLETE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = PHASE1_COMPLETE.md; sourceTree = "<group>"; };
+		3EFC0BCD2F4F9CA2005D3073 /* PRE_PUBLISH_CHECKLIST.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = PRE_PUBLISH_CHECKLIST.md; sourceTree = "<group>"; };
+		3EFC0BCF2F4F9D75005D3073 /* START_HERE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = START_HERE.md; sourceTree = "<group>"; };
+		3EFC0BD12F4F9E9E005D3073 /* README_UPDATED.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README_UPDATED.md; sourceTree = "<group>"; };
+		3EFC0BD32F4F9F1E005D3073 /* TERMINOLOGY_GUIDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = TERMINOLOGY_GUIDE.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		3EBB3AC32F4D144C003E0403 /* Exceptions for "GeoGuard" folder in "GeoGuard" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 3E1521C52F4D054800AF4C8C /* GeoGuard */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		3E1521C82F4D054800AF4C8C /* GeoGuard */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				3EBB3AC32F4D144C003E0403 /* Exceptions for "GeoGuard" folder in "GeoGuard" target */,
+			);
 			path = GeoGuard;
 			sourceTree = "<group>";
 		};
@@ -23,6 +59,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3EEB58962F4D08860053B5C5 /* GoogleMaps in Frameworks */,
+				3EBB3ACC2F4D2B34003E0403 /* FirebaseFirestore in Frameworks */,
+				3EBB3ACA2F4D2B34003E0403 /* FirebaseCore in Frameworks */,
+				3E13ADCD2F4E6E7800D45B68 /* GooglePlaces in Frameworks */,
+				3EBB3AC82F4D2B34003E0403 /* FirebaseAuth in Frameworks */,
+				3E13ADCF2F4E6E7800D45B68 /* GooglePlacesSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -34,6 +76,13 @@
 			children = (
 				3E1521C82F4D054800AF4C8C /* GeoGuard */,
 				3E1521C72F4D054800AF4C8C /* Products */,
+				3EFC0BC72F4F9BE7005D3073 /* QUICKSTART.md */,
+				3EFC0BC92F4F9C49005D3073 /* GITHUB_SETUP.md */,
+				3EFC0BCB2F4F9C64005D3073 /* PHASE1_COMPLETE.md */,
+				3EFC0BCD2F4F9CA2005D3073 /* PRE_PUBLISH_CHECKLIST.md */,
+				3EFC0BCF2F4F9D75005D3073 /* START_HERE.md */,
+				3EFC0BD12F4F9E9E005D3073 /* README_UPDATED.md */,
+				3EFC0BD32F4F9F1E005D3073 /* TERMINOLOGY_GUIDE.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -65,6 +114,12 @@
 			);
 			name = GeoGuard;
 			packageProductDependencies = (
+				3EEB58952F4D08860053B5C5 /* GoogleMaps */,
+				3EBB3AC72F4D2B34003E0403 /* FirebaseAuth */,
+				3EBB3AC92F4D2B34003E0403 /* FirebaseCore */,
+				3EBB3ACB2F4D2B34003E0403 /* FirebaseFirestore */,
+				3E13ADCC2F4E6E7800D45B68 /* GooglePlaces */,
+				3E13ADCE2F4E6E7800D45B68 /* GooglePlacesSwift */,
 			);
 			productName = GeoGuard;
 			productReference = 3E1521C62F4D054800AF4C8C /* GeoGuard.app */;
@@ -94,6 +149,11 @@
 			);
 			mainGroup = 3E1521BD2F4D054700AF4C8C;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				3EEB58942F4D08860053B5C5 /* XCRemoteSwiftPackageReference "ios-maps-sdk" */,
+				3EBB3AC62F4D2B34003E0403 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				3E13ADCB2F4E6E7800D45B68 /* XCRemoteSwiftPackageReference "ios-places-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 3E1521C72F4D054800AF4C8C /* Products */;
 			projectDirPath = "";
@@ -109,6 +169,13 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3EFC0BD22F4F9E9E005D3073 /* README_UPDATED.md in Resources */,
+				3EFC0BD02F4F9D75005D3073 /* START_HERE.md in Resources */,
+				3EFC0BCE2F4F9CA2005D3073 /* PRE_PUBLISH_CHECKLIST.md in Resources */,
+				3EFC0BCA2F4F9C49005D3073 /* GITHUB_SETUP.md in Resources */,
+				3EFC0BD42F4F9F1E005D3073 /* TERMINOLOGY_GUIDE.md in Resources */,
+				3EFC0BCC2F4F9C64005D3073 /* PHASE1_COMPLETE.md in Resources */,
+				3EFC0BC82F4F9BE7005D3073 /* QUICKSTART.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -256,6 +323,9 @@
 				DEVELOPMENT_TEAM = 8N8954DCXL;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = GeoGuard/Info.plist;
+				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "eoGuard needs your location to monitor geofences and provide location-based alerts";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "GeoGuard needs your location based services";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -288,6 +358,9 @@
 				DEVELOPMENT_TEAM = 8N8954DCXL;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = GeoGuard/Info.plist;
+				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "eoGuard needs your location to monitor geofences and provide location-based alerts";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "GeoGuard needs your location based services";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -332,6 +405,66 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		3E13ADCB2F4E6E7800D45B68 /* XCRemoteSwiftPackageReference "ios-places-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googlemaps/ios-places-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 10.8.0;
+			};
+		};
+		3EBB3AC62F4D2B34003E0403 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.9.0;
+			};
+		};
+		3EEB58942F4D08860053B5C5 /* XCRemoteSwiftPackageReference "ios-maps-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googlemaps/ios-maps-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 10.8.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		3E13ADCC2F4E6E7800D45B68 /* GooglePlaces */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3E13ADCB2F4E6E7800D45B68 /* XCRemoteSwiftPackageReference "ios-places-sdk" */;
+			productName = GooglePlaces;
+		};
+		3E13ADCE2F4E6E7800D45B68 /* GooglePlacesSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3E13ADCB2F4E6E7800D45B68 /* XCRemoteSwiftPackageReference "ios-places-sdk" */;
+			productName = GooglePlacesSwift;
+		};
+		3EBB3AC72F4D2B34003E0403 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3EBB3AC62F4D2B34003E0403 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		3EBB3AC92F4D2B34003E0403 /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3EBB3AC62F4D2B34003E0403 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		3EBB3ACB2F4D2B34003E0403 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3EBB3AC62F4D2B34003E0403 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		3EEB58952F4D08860053B5C5 /* GoogleMaps */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3EEB58942F4D08860053B5C5 /* XCRemoteSwiftPackageReference "ios-maps-sdk" */;
+			productName = GoogleMaps;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 3E1521BE2F4D054700AF4C8C /* Project object */;
 }

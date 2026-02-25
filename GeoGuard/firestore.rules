@@ -1,0 +1,146 @@
+// Firestore Security Rules for Multi-Tenant GeoGuard
+// Deploy these rules to Firebase Console
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    // Helper function to get user's tenant ID from their document
+    function getUserTenantId() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tenantId;
+    }
+    
+    // Helper function to check if user has a specific role
+    function hasRole(role) {
+      return isSignedIn() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
+    }
+    
+    // Helper function to check if data belongs to user's tenant
+    function isSameTenant(tenantId) {
+      return isSignedIn() && getUserTenantId() == tenantId;
+    }
+    
+    // ========== TENANTS ==========
+    match /tenants/{tenantId} {
+      // Anyone can read their own tenant
+      allow read: if isSignedIn() && isSameTenant(tenantId);
+      
+      // Only admins can update their tenant
+      allow update: if isSignedIn() && 
+                       isSameTenant(tenantId) && 
+                       (hasRole('admin') || hasRole('super_admin'));
+      
+      // Anyone can create a tenant (company registration)
+      allow create: if isSignedIn();
+      
+      // Only super admins can delete tenants
+      allow delete: if hasRole('super_admin');
+    }
+    
+    // ========== USERS ==========
+    match /users/{userId} {
+      // Users can read their own document
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      
+      // Users in same tenant can read each other (for viewing team)
+      allow read: if isSignedIn() && 
+                     isSameTenant(resource.data.tenantId);
+      
+      // Users can create their own document during signup
+      allow create: if isSignedIn() && 
+                       request.auth.uid == userId &&
+                       request.resource.data.tenantId is string;
+      
+      // Users can update their own profile (limited fields)
+      allow update: if isSignedIn() && 
+                       request.auth.uid == userId &&
+                       request.resource.data.tenantId == resource.data.tenantId && // Can't change tenant
+                       request.resource.data.role == resource.data.role; // Can't change own role
+      
+      // Admins can update users in their tenant
+      allow update: if isSignedIn() &&
+                       (hasRole('admin') || hasRole('super_admin')) &&
+                       isSameTenant(resource.data.tenantId);
+      
+      // Only admins can delete users
+      allow delete: if isSignedIn() &&
+                       (hasRole('admin') || hasRole('super_admin')) &&
+                       isSameTenant(resource.data.tenantId);
+    }
+    
+    // ========== INVITATIONS ==========
+    match /invitations/{invitationId} {
+      // Anyone can read invitations to validate codes (but filtered by code)
+      allow read: if isSignedIn();
+      
+      // Only admins and managers can create invitations for their tenant
+      allow create: if isSignedIn() &&
+                       (hasRole('admin') || hasRole('manager') || hasRole('super_admin')) &&
+                       isSameTenant(request.resource.data.tenantId);
+      
+      // System can update when invitation is used
+      allow update: if isSignedIn() &&
+                       (resource.data.isUsed == false && request.resource.data.isUsed == true);
+      
+      // Only admins can delete invitations
+      allow delete: if isSignedIn() &&
+                       (hasRole('admin') || hasRole('super_admin')) &&
+                       isSameTenant(resource.data.tenantId);
+    }
+    
+    // ========== GEOFENCES ==========
+    match /geofences/{geofenceId} {
+      // Users can read geofences in their tenant
+      allow read: if isSignedIn() && 
+                     isSameTenant(resource.data.tenantId);
+      
+      // Admins and managers can create/update/delete geofences
+      allow create, update, delete: if isSignedIn() &&
+                                       (hasRole('admin') || hasRole('manager') || hasRole('super_admin')) &&
+                                       isSameTenant(request.resource.data.tenantId);
+    }
+    
+    // ========== VEHICLES ==========
+    match /vehicles/{vehicleId} {
+      // Users can read vehicles in their tenant
+      allow read: if isSignedIn() && 
+                     isSameTenant(resource.data.tenantId);
+      
+      // Admins and managers can create/update/delete vehicles
+      allow create, update, delete: if isSignedIn() &&
+                                       (hasRole('admin') || hasRole('manager') || hasRole('super_admin')) &&
+                                       isSameTenant(request.resource.data.tenantId);
+    }
+    
+    // ========== LOCATION LOGS ==========
+    match /location_logs/{logId} {
+      // Users can read their own location logs
+      allow read: if isSignedIn() && 
+                     resource.data.userId == request.auth.uid;
+      
+      // Managers and admins can read all logs in their tenant
+      allow read: if isSignedIn() &&
+                     (hasRole('admin') || hasRole('manager') || hasRole('super_admin')) &&
+                     isSameTenant(resource.data.tenantId);
+      
+      // Users can create their own location logs
+      allow create: if isSignedIn() &&
+                       request.resource.data.userId == request.auth.uid &&
+                       isSameTenant(request.resource.data.tenantId);
+      
+      // No one can update or delete location logs (immutable audit trail)
+      allow update, delete: if false;
+    }
+    
+    // ========== DENY ALL OTHER ACCESS ==========
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

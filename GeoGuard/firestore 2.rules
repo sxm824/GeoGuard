@@ -1,0 +1,153 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function sameTenant(tenantId) {
+      return isAuthenticated() && getUserData().tenantId == tenantId;
+    }
+    
+    function hasRole(role) {
+      return isAuthenticated() && getUserData().role == role;
+    }
+    
+    function hasAnyRole(roles) {
+      return isAuthenticated() && getUserData().role in roles;
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      // Allow users to create their own account during signup
+      allow create: if isAuthenticated() && 
+                      request.auth.uid == userId &&
+                      request.resource.data.keys().hasAll(['tenantId', 'email', 'role', 'fullName', 'initials', 'phone', 'address', 'city', 'country', 'vehicle', 'isActive', 'createdAt']);
+      
+      // Allow users to read their own data
+      allow read: if isOwner(userId);
+      
+      // Allow users in same tenant to read each other (for user management, maps, etc.)
+      allow read: if isAuthenticated() && sameTenant(resource.data.tenantId);
+      
+      // Only admins and super admins can update user data
+      allow update: if isAuthenticated() && 
+                      sameTenant(resource.data.tenantId) && 
+                      hasAnyRole(['admin', 'super_admin']);
+      
+      // Only admins and super admins can delete users
+      allow delete: if isAuthenticated() && 
+                      sameTenant(resource.data.tenantId) && 
+                      hasAnyRole(['admin', 'super_admin']);
+    }
+    
+    // Tenants collection
+    match /tenants/{tenantId} {
+      // Allow creating a tenant during company registration
+      allow create: if isAuthenticated() &&
+                      request.resource.data.adminUserId == request.auth.uid;
+      
+      // Allow users in the tenant to read tenant data
+      allow read: if isAuthenticated() && sameTenant(tenantId);
+      
+      // Only admins can update tenant settings
+      allow update: if isAuthenticated() && 
+                      sameTenant(tenantId) && 
+                      hasAnyRole(['admin', 'super_admin']);
+      
+      // Only super admins can delete tenants
+      allow delete: if hasRole('super_admin');
+    }
+    
+    // Invitations collection
+    match /invitations/{invitationId} {
+      // Allow admins to create invitations
+      allow create: if isAuthenticated() && 
+                      sameTenant(request.resource.data.tenantId) && 
+                      hasAnyRole(['admin', 'super_admin', 'manager']);
+      
+      // Allow anyone to read invitations (needed for signup validation)
+      allow read: if true;
+      
+      // Allow admins to update invitations (mark as used, etc.)
+      allow update: if isAuthenticated() && 
+                      sameTenant(resource.data.tenantId) && 
+                      hasAnyRole(['admin', 'super_admin', 'manager']);
+      
+      // Allow admins to delete invitations
+      allow delete: if isAuthenticated() && 
+                      sameTenant(resource.data.tenantId) && 
+                      hasAnyRole(['admin', 'super_admin', 'manager']);
+    }
+    
+    // Geofences collection
+    match /geofences/{geofenceId} {
+      // Allow managers and admins to create geofences
+      allow create: if isAuthenticated() && 
+                      sameTenant(request.resource.data.tenantId) && 
+                      hasAnyRole(['admin', 'super_admin', 'manager']);
+      
+      // Allow users in the tenant to read geofences
+      allow read: if isAuthenticated() && sameTenant(resource.data.tenantId);
+      
+      // Allow managers and admins to update geofences
+      allow update: if isAuthenticated() && 
+                      sameTenant(resource.data.tenantId) && 
+                      hasAnyRole(['admin', 'super_admin', 'manager']);
+      
+      // Allow managers and admins to delete geofences
+      allow delete: if isAuthenticated() && 
+                      sameTenant(resource.data.tenantId) && 
+                      hasAnyRole(['admin', 'super_admin', 'manager']);
+    }
+    
+    // Locations collection (real-time tracking)
+    match /locations/{locationId} {
+      // Allow field personnel to create/update their own location
+      allow create, update: if isAuthenticated() && 
+                              request.resource.data.userId == request.auth.uid &&
+                              sameTenant(request.resource.data.tenantId);
+      
+      // Allow users in the tenant to read locations
+      allow read: if isAuthenticated() && sameTenant(resource.data.tenantId);
+      
+      // Don't allow deleting location history
+      allow delete: if false;
+    }
+    
+    // Alerts collection
+    match /alerts/{alertId} {
+      // Allow any authenticated user to create alerts (emergency situations)
+      allow create: if isAuthenticated() && 
+                      request.resource.data.userId == request.auth.uid;
+      
+      // Allow users in the tenant to read alerts
+      allow read: if isAuthenticated() && sameTenant(resource.data.tenantId);
+      
+      // Allow admins and managers to update alerts (acknowledge, resolve, etc.)
+      allow update: if isAuthenticated() && 
+                      sameTenant(resource.data.tenantId) && 
+                      hasAnyRole(['admin', 'super_admin', 'manager']);
+      
+      // Only admins can delete alerts
+      allow delete: if isAuthenticated() && 
+                      sameTenant(resource.data.tenantId) && 
+                      hasAnyRole(['admin', 'super_admin']);
+    }
+    
+    // Deny all other access by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
