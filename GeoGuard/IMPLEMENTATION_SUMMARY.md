@@ -1,5 +1,33 @@
 # Multi-Tenant Implementation Summary
 
+## 🚀 Quick Answer: How Does Signup Work?
+
+```
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃  STEP 1: First Person Creates Organization + Admin Account  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+   "Register Your Organization" button
+   → Fill in company info + admin account info
+   → Both created together ✅
+   → Admin logged in, can invite others
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃  STEP 2: Admin Creates & Shares Invitation Codes            ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+   Admin → Invitation Management → Create Invitation
+   → Code generated (e.g., "ABC12XYZ")
+   → Share with employee via text/email/Slack
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃  STEP 3: Employees Join Using Invitation Code              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+   Employee downloads app → Enter invitation code
+   → Fill in personal details
+   → Joins company with assigned role ✅
+```
+
+---
+
 ## 🎉 What We've Built
 
 GeoGuard now has a **complete multi-tenant architecture** (Approach 2: Tenant-ID Based) that allows multiple companies to use the app with full data isolation.
@@ -81,50 +109,100 @@ GeoGuard now has a **complete multi-tenant architecture** (Approach 2: Tenant-ID
 
 ## 🏗️ How It Works
 
-### 1. Company Registration Flow
+### User Types & Their Journey
+
 ```
-User clicks "Register Your Company"
+┌─────────────────────────────────────────────────────────────┐
+│  FIRST USER (Company Owner/Admin)                           │
+├─────────────────────────────────────────────────────────────┤
+│  1. Downloads GeoGuard                                       │
+│  2. Taps "Register Your Organization"                        │
+│  3. Fills in company + admin account info                    │
+│  4. ✅ Organization + Admin account created together         │
+│  5. Logged in automatically                                  │
+│  6. Can now invite employees                                 │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│  SUBSEQUENT USERS (Employees/Team Members)                   │
+├─────────────────────────────────────────────────────────────┤
+│  1. Receives invitation code from admin                      │
+│     (e.g., "ABC12XYZ" via text/email)                        │
+│  2. Downloads GeoGuard                                       │
+│  3. Enters invitation code in signup screen                  │
+│  4. Fills in personal details                                │
+│  5. ✅ Joins existing organization with assigned role        │
+│  6. Logged in automatically                                  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 1. Company Registration Flow (First Admin Signs Up)
+```
+User clicks "Register Your Organization"
     ↓
 CompanyRegistrationView appears
     ↓
 User enters:
   • Company name
   • Company domain (optional)
-  • Admin email/password
-  • Personal details
+  • Company address
   • Subscription tier
+  • Admin email/password
+  • Admin personal details
     ↓
-System creates:
-  1. Firebase Auth account (admin)
-  2. Tenant document
-  3. Admin user document with role=admin
+System creates SIMULTANEOUSLY:
+  1. Tenant document (organization/company)
+  2. Firebase Auth account (admin)
+  3. Admin user document with:
+     - role = admin
+     - tenantId = newly created tenant
     ↓
-Admin can now invite employees
+Admin is logged in automatically
+    ↓
+Admin can now:
+  ✅ Create invitation codes
+  ✅ Invite employees
+  ✅ Manage company settings
 ```
 
-### 2. Employee Signup Flow (With Invitation)
+### 2. Employee Signup Flow (Subsequent Users Join via Invitation)
 ```
-Admin creates invitation
+Admin logs into GeoGuard
+    ↓
+Admin goes to Invitation Management
+    ↓
+Admin creates invitation:
+  • Select role (fieldPersonnel, manager, admin)
+  • Optional: Specific email address
+  • Set expiration (default 7 days)
     ↓
 Invitation code generated (e.g., "ABC12XYZ")
     ↓
 Admin shares code with employee
+  (via SMS, email, Slack, etc.)
     ↓
-Employee enters code in SignupView
+Employee opens GeoGuard signup screen
+    ↓
+Employee enters invitation code
     ↓
 System validates:
-  • Code exists?
-  • Not expired?
-  • Email matches? (if specific)
+  ✅ Code exists?
+  ✅ Not expired?
+  ✅ Email matches? (if invitation is email-specific)
     ↓
-Employee completes signup
+Employee completes signup with personal details
     ↓
 System creates:
-  1. Firebase Auth account
-  2. User document with invitation's tenantId + role
-  3. Marks invitation as used
+  1. Firebase Auth account (employee)
+  2. User document with:
+     - tenantId from invitation (joins same company)
+     - role from invitation (e.g., fieldPersonnel)
+  3. Marks invitation as "used"
+    ↓
+Employee is logged in automatically
     ↓
 Employee has access to company's data
+  (limited by their role permissions)
 ```
 
 ### 3. Data Isolation
@@ -322,11 +400,102 @@ db.collection("users")
 
 ## 📚 Documentation Files
 
-1. **`MULTI_TENANT_GUIDE.md`** - Complete architecture explanation
-2. **`SETUP_CHECKLIST.md`** - Step-by-step setup instructions
-3. **`ADDRESS_SETUP.md`** - Google Places integration guide
-4. **`firestore.rules`** - Security rules with comments
-5. **`functions_example.js`** - Cloud Functions with examples
+1. **`USER_ONBOARDING_GUIDE.md`** ⭐ **START HERE FOR UNDERSTANDING USER FLOW**
+   - Step-by-step user journeys
+   - Real-world scenarios
+   - Common questions answered
+   - Perfect for: Product managers, support team, new developers
+
+2. **`USER_FLOW_DIAGRAM.md`** ⭐ **VISUAL GUIDE**
+   - Flowcharts and diagrams
+   - Quick visual reference
+   - Architecture overview
+   - Perfect for: Visual learners, presentations
+
+3. **`IMPLEMENTATION_SUMMARY.md`** (This file)
+   - High-level overview
+   - What was built
+   - Features and capabilities
+   - Perfect for: Project stakeholders
+
+4. **`MULTI_TENANT_GUIDE.md`** - Complete architecture explanation
+   - Technical deep dive
+   - Security implementation
+   - Database design
+   - Perfect for: Developers
+
+5. **`SETUP_CHECKLIST.md`** - Step-by-step setup instructions
+   - Deployment steps
+   - Firebase configuration
+   - Testing procedures
+   - Perfect for: DevOps, deployment
+
+6. **`FIREBASE_RULES_SETUP.md`** - Security rules guide
+   - Firestore rules explanation
+   - Rule deployment
+   - Troubleshooting
+   - Perfect for: Security review
+
+7. **`ADDRESS_SETUP.md`** - Google Places integration guide
+   - API setup
+   - Autocomplete configuration
+   - Perfect for: Feature implementation
+
+8. **`firestore.rules`** - Security rules with comments
+   - Actual rule definitions
+   - Inline documentation
+   - Perfect for: Deployment
+
+9. **`functions_example.js`** - Cloud Functions with examples
+   - Function implementations
+   - Automation examples
+   - Perfect for: Backend development
+
+---
+
+## ❓ Frequently Asked Questions
+
+### Q: Should I create the organization first, then admin accounts?
+**A: No!** The organization and first admin account are created **together in one step**. This is the standard SaaS pattern and ensures every organization has at least one admin from the start.
+
+### Q: Can I create multiple admin accounts during registration?
+**A: No.** You create ONE admin account during company registration. That admin can then:
+- Create invitation codes for additional admins
+- Invite managers, field personnel, etc.
+
+### Q: What if I want to add a second admin later?
+**A: Easy!** The first admin can:
+1. Go to Invitation Management
+2. Create invitation with `role = admin`
+3. Share code with the new admin
+4. New admin signs up with that code
+
+### Q: Can someone join without an invitation code?
+**A: Only if domain matching is enabled.** 
+- If company registered with domain `acme.com`
+- Users with `@acme.com` email can join automatically as field personnel
+- Otherwise, invitation code is required
+
+### Q: Who can send invitation codes?
+**A: Admins and Managers** (based on permissions in `UserRole.swift`)
+
+### Q: How many invitations can I create?
+**A: Depends on subscription tier:**
+- Trial: 5 users max
+- Basic: 25 users max  
+- Professional: 100 users max
+- Enterprise: Unlimited
+
+### Q: Can I create invitations for specific people?
+**A: Yes!** When creating an invitation, you can:
+- Leave email blank → Anyone can use the code
+- Specify email → Only that email address can use it
+
+### Q: How long are invitation codes valid?
+**A: 7 days by default**, configurable from 1-30 days when creating the invitation.
+
+### Q: Can invitation codes be reused?
+**A: No.** Each code is single-use and automatically marked as "used" after signup.
 
 ---
 
