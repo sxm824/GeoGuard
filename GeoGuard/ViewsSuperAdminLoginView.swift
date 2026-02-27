@@ -1,55 +1,40 @@
 //
-//  loginView.swift
+//  SuperAdminLoginView.swift
 //  GeoGuard
 //
-//  Created by Saleh Mukbil on 2026-02-25.
+//  Created by Saleh Mukbil on 2026-02-27.
 //
 
 import SwiftUI
 import FirebaseAuth
+import FirebaseFirestore
 
-struct LoginView: View {
+struct SuperAdminLoginView: View {
     @EnvironmentObject var authService: AuthService
+    @Environment(\.dismiss) private var dismiss
     @State private var email = ""
     @State private var password = ""
+    @State private var verificationCode = ""
     @State private var errorMessage = ""
     @State private var isLoading = false
-    @State private var showingSignup = false
-    @State private var showingSuperAdminLogin = false
-    @State private var superAdminTapCount = 0
+    @State private var showVerification = false
     
     var body: some View {
         NavigationStack {
             VStack(spacing: 24) {
                 Spacer()
                 
-                // Logo/Header
+                // Super Admin Header
                 VStack(spacing: 12) {
-                    Image(systemName: "shield.lefthalf.filled.badge.checkmark")
+                    Image(systemName: "crown.fill")
                         .font(.system(size: 70))
-                        .foregroundStyle(.blue.gradient)
-                        .onTapGesture {
-                            superAdminTapCount += 1
-                            if superAdminTapCount >= 5 {
-                                showingSuperAdminLogin = true
-                                superAdminTapCount = 0
-                            }
-                            
-                            // Reset counter after 3 seconds
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                                superAdminTapCount = 0
-                            }
-                        }
+                        .foregroundStyle(.red.gradient)
                     
-                    Text("GeoGuard")
-                        .font(.largeTitle)
+                    Text("Platform Administration")
+                        .font(.title)
                         .bold()
                     
-                    Text("Track smart. Stay safe.")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    
-                    Text("Your people, your assets, guarded.")
+                    Text("GeoGuard Super Admin Access")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
@@ -57,7 +42,7 @@ struct LoginView: View {
                 
                 // Login Form
                 VStack(spacing: 16) {
-                    TextField("Email", text: $email)
+                    TextField("Admin Email", text: $email)
                         .textFieldStyle(.roundedBorder)
                         .autocapitalization(.none)
                         .keyboardType(.emailAddress)
@@ -66,6 +51,12 @@ struct LoginView: View {
                     SecureField("Password", text: $password)
                         .textFieldStyle(.roundedBorder)
                         .textContentType(.password)
+                    
+                    if showVerification {
+                        SecureField("2FA Code (Optional)", text: $verificationCode)
+                            .textFieldStyle(.roundedBorder)
+                            .keyboardType(.numberPad)
+                    }
                     
                     if !errorMessage.isEmpty {
                         Text(errorMessage)
@@ -81,51 +72,31 @@ struct LoginView: View {
                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                 .frame(maxWidth: .infinity)
                         } else {
-                            Text("Sign In")
+                            Text("Sign In as Super Admin")
                                 .bold()
                                 .frame(maxWidth: .infinity)
                         }
                     }
                     .buttonStyle(.borderedProminent)
+                    .tint(.red)
                     .controlSize(.large)
                     .disabled(isLoading || email.isEmpty || password.isEmpty)
                 }
                 .padding(.horizontal)
                 
-                // Divider
-                HStack {
-                    VStack { Divider() }
-                    Text("New to GeoGuard?")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    VStack { Divider() }
-                }
-                .padding(.horizontal)
-                .padding(.top, 20)
+                Spacer()
                 
-                // Sign Up Button
+                // Back to normal login
                 Button {
-                    showingSignup = true
+                    dismiss()
                 } label: {
-                    Text("Create Account")
-                        .bold()
-                        .frame(maxWidth: .infinity)
+                    Text("Back to Regular Login")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
-                .padding(.horizontal)
-                
-                Spacer()
-                Spacer()
+                .padding(.bottom)
             }
             .padding()
-            .sheet(isPresented: $showingSignup) {
-                SignupView()
-            }
-            .sheet(isPresented: $showingSuperAdminLogin) {
-                SuperAdminLoginView()
-                    .environmentObject(authService)
-            }
         }
     }
     
@@ -136,12 +107,48 @@ struct LoginView: View {
             defer { isLoading = false }
             
             do {
+                // Sign in with Firebase
                 let result = try await Auth.auth().signIn(withEmail: email, password: password)
-                print("✅ Login successful: \(result.user.uid)")
-                // AuthService will automatically pick up the auth state change
+                
+                // Verify user has super admin role
+                let db = Firestore.firestore()
+                let userDoc = try await db.collection("users").document(result.user.uid).getDocument()
+                
+                guard let userData = try? userDoc.data(as: User.self) else {
+                    errorMessage = "Failed to load user data"
+                    try await Auth.auth().signOut()
+                    return
+                }
+                
+                // Check if user is super admin
+                guard userData.role == .superAdmin else {
+                    errorMessage = "Access denied. Super admin privileges required."
+                    try await Auth.auth().signOut()
+                    return
+                }
+                
+                // Verify account is active
+                guard userData.isActive else {
+                    errorMessage = "This account has been deactivated."
+                    try await Auth.auth().signOut()
+                    return
+                }
+                
+                print("✅ Super Admin login successful: \(userData.fullName)")
+                
+                // Optional: Log super admin access
+                try await db.collection("audit_logs").addDocument(data: [
+                    "userId": result.user.uid,
+                    "action": "super_admin_login",
+                    "timestamp": FieldValue.serverTimestamp(),
+                    "email": email
+                ])
+                
+                dismiss()
+                
             } catch {
                 errorMessage = getErrorMessage(for: error)
-                print("❌ Login error: \(error.localizedDescription)")
+                print("❌ Super admin login error: \(error.localizedDescription)")
             }
         }
     }
@@ -153,13 +160,13 @@ struct LoginView: View {
         case AuthErrorCode.wrongPassword.rawValue:
             return "Incorrect password. Please try again."
         case AuthErrorCode.userNotFound.rawValue:
-            return "No account found with this email."
+            return "No admin account found with this email."
         case AuthErrorCode.invalidEmail.rawValue:
             return "Please enter a valid email address."
         case AuthErrorCode.networkError.rawValue:
             return "Network error. Please check your connection."
         case AuthErrorCode.tooManyRequests.rawValue:
-            return "Too many attempts. Please try again later."
+            return "Too many attempts. Account temporarily locked."
         default:
             return error.localizedDescription
         }
@@ -167,6 +174,6 @@ struct LoginView: View {
 }
 
 #Preview {
-    LoginView()
+    SuperAdminLoginView()
+        .environmentObject(AuthService())
 }
-

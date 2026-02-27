@@ -11,7 +11,11 @@ import FirebaseFirestore
 
 struct CompanyRegistrationView: View {
     @StateObject private var tenantService = TenantService()
+    @StateObject private var licenseService = LicenseService()
     @Environment(\.dismiss) private var dismiss
+    
+    @State private var licenseKey = ""
+    @State private var validatedLicense: License?
     
     @State private var companyName = ""
     @State private var companyDomain = ""
@@ -50,6 +54,57 @@ struct CompanyRegistrationView: View {
                             .multilineTextAlignment(.center)
                     }
                     .padding(.bottom)
+                    
+                    // License Key Section
+                    VStack(alignment: .leading, spacing: 16) {
+                        Label("License Key Required", systemImage: "key.fill")
+                            .font(.headline)
+                        
+                        HStack {
+                            TextField("Enter License Key", text: $licenseKey)
+                                .textFieldStyle(.roundedBorder)
+                                .autocapitalization(.allCharacters)
+                                .onChange(of: licenseKey) { oldValue, newValue in
+                                    licenseKey = newValue.uppercased()
+                                }
+                            
+                            Button("Validate") {
+                                validateLicense()
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(licenseKey.isEmpty || isLoading)
+                        }
+                        
+                        if let license = validatedLicense {
+                            HStack {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.green)
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Valid License")
+                                        .font(.subheadline)
+                                        .foregroundColor(.green)
+                                        .bold()
+                                    
+                                    if let issuedTo = license.issuedTo {
+                                        Text("Issued to: \(issuedTo)")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                            }
+                            .padding()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color.green.opacity(0.1))
+                            .cornerRadius(8)
+                        }
+                        
+                        Text("Contact GeoGuard support to obtain a license key")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Divider()
                     
                     // Organization Information
                     VStack(alignment: .leading, spacing: 16) {
@@ -192,6 +247,22 @@ struct CompanyRegistrationView: View {
         }
     }
     
+    func validateLicense() {
+        Task {
+            isLoading = true
+            errorMessage = ""
+            defer { isLoading = false }
+            
+            do {
+                let license = try await licenseService.validateLicense(key: licenseKey)
+                validatedLicense = license
+            } catch {
+                errorMessage = error.localizedDescription
+                validatedLicense = nil
+            }
+        }
+    }
+    
     func registerCompany() {
         Task {
             isLoading = true
@@ -242,6 +313,15 @@ struct CompanyRegistrationView: View {
                     .document(userId)
                     .setData(adminUser.toDictionary())
                 
+                // 4. Mark license as used
+                if let licenseId = validatedLicense?.id {
+                    try await licenseService.markLicenseAsUsed(
+                        licenseId: licenseId,
+                        tenantId: tenantId,
+                        organizationName: companyName
+                    )
+                }
+                
                 // Success!
                 registrationSuccess = true
                 
@@ -253,6 +333,12 @@ struct CompanyRegistrationView: View {
     
     func validateInputs() -> Bool {
         errorMessage = ""
+        
+        // Check license key first
+        if validatedLicense == nil {
+            errorMessage = "Please validate your license key before proceeding"
+            return false
+        }
         
         if companyName.trimmingCharacters(in: .whitespaces).isEmpty {
             errorMessage = "Please enter your company name"
