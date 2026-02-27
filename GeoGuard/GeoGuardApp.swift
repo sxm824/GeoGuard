@@ -11,7 +11,14 @@ import GoogleMaps
 // import GooglePlaces
 import FirebaseCore
 
-@main
+// DISABLED: This entire file is disabled because ExampleGeoGuardApp.swift is the active entry point
+// To use this file instead:
+// 1. Uncomment @main below
+// 2. Comment out @main in ExampleGeoGuardApp.swift
+// 3. Make these views public (remove 'private' keywords)
+
+/*
+// @main
 struct GeoGuardApp: App {
     @StateObject private var authService = AuthService()
     
@@ -27,12 +34,13 @@ struct GeoGuardApp: App {
     
     var body: some Scene {
         WindowGroup {
-            RootView()
+            GeoGuardRootView()
                 .environmentObject(authService)
         }
     }
 }
-struct RootView: View {
+
+private struct GeoGuardRootView: View {
     @EnvironmentObject var authService: AuthService
     
     var body: some View {
@@ -52,7 +60,7 @@ struct RootView: View {
                     AdminDashboardView()
                         .environmentObject(authService)
                 case .manager:
-                    ManagerDashboardView()
+                    GeoGuardManagerDashboardView()
                         .environmentObject(authService)
                 case .fieldPersonnel:
                     DriverDashboardView()
@@ -60,14 +68,14 @@ struct RootView: View {
                 }
             } else {
                 // Not authenticated
-                LoginView()
+                GeoGuardLoginView()
             }
         }
     }
 }
 
 // Placeholder for Manager Dashboard (similar to Driver for now)
-struct ManagerDashboardView: View {
+private struct GeoGuardManagerDashboardView: View {
     @EnvironmentObject var authService: AuthService
     @State private var showingSignOutAlert = false
     
@@ -110,8 +118,17 @@ struct ManagerDashboardView: View {
     }
 }
 
+private struct GeoGuardLoginView: View {
+    @EnvironmentObject var authService: AuthService
+    
+    var body: some View {
+        Text("Login View - Placeholder")
+    }
+}
+
 #Preview {
-    RootView()
+    GeoGuardRootView()
         .environmentObject(AuthService())
 }
+*/
 

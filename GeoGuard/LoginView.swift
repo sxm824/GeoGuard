@@ -16,6 +16,7 @@ struct LoginView: View {
     @State private var isLoading = false
     @State private var showingSignup = false
     @State private var showingSuperAdminLogin = false
+    @State private var showingSuperAdminSetup = false
     @State private var superAdminTapCount = 0
     
     var body: some View {
@@ -116,6 +117,37 @@ struct LoginView: View {
                 .padding(.horizontal)
                 
                 Spacer()
+                
+                // Super Admin Access Button
+                Button {
+                    showingSuperAdminLogin = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "crown.fill")
+                            .font(.caption)
+                        Text("Super Admin Login")
+                            .font(.caption)
+                    }
+                    .foregroundColor(.purple)
+                }
+                .padding(.bottom, 8)
+                
+                // DEV ONLY: Super Admin Setup
+                #if DEBUG
+                Button {
+                    showingSuperAdminSetup = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "wrench.and.screwdriver.fill")
+                            .font(.caption2)
+                        Text("Create Super Admin (Dev Only)")
+                            .font(.caption2)
+                    }
+                    .foregroundColor(.orange)
+                }
+                .padding(.bottom, 8)
+                #endif
+                
                 Spacer()
             }
             .padding()
@@ -125,6 +157,9 @@ struct LoginView: View {
             .sheet(isPresented: $showingSuperAdminLogin) {
                 SuperAdminLoginView()
                     .environmentObject(authService)
+            }
+            .sheet(isPresented: $showingSuperAdminSetup) {
+                SuperAdminSetupView()
             }
         }
     }
