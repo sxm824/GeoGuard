@@ -4,8 +4,19 @@
 //
 //  Created by Saleh Mukbil on 2026-02-27.
 //
-//  ⚠️ DEVELOPMENT ONLY - Remove before production deployment
-//  This view helps create the initial super admin account
+//  ⚠️ DEVELOPMENT ONLY - This file should NOT be included in production builds
+//  
+//  PURPOSE: One-time setup tool to create the initial super admin account
+//  
+//  USAGE:
+//  1. Temporarily change ExampleGeoGuardApp.swift to show SuperAdminSetupView()
+//  2. Run the app and create your super admin
+//  3. Change back to ContentRootView()
+//  4. (Optional) Delete this file before production deployment
+//
+//  SECURITY: Before creating super admin, temporarily open Firestore rules:
+//  match /{document=**} { allow write: if true; }
+//  Then secure them again after creation!
 
 import SwiftUI
 import FirebaseAuth
@@ -60,7 +71,7 @@ struct SuperAdminSetupView: View {
                 }
                 
                 Section("Credentials Summary") {
-                    LabeledContent("Role", value: "Super Admin")
+                    LabeledContent("Role", value: "super Admin")
                         .foregroundColor(.purple)
                     LabeledContent("Tenant ID", value: "PLATFORM")
                         .foregroundColor(.purple)
@@ -127,32 +138,62 @@ struct SuperAdminSetupView: View {
             defer { isCreating = false }
             
             do {
-                // 1. Create Firebase Auth user
-                let authResult = try await Auth.auth().createUser(withEmail: email, password: password)
-                let uid = authResult.user.uid
+                var uid: String
+                var authResult: AuthDataResult?
                 
-                print("✅ Created Firebase Auth user: \(uid)")
+                // 1. Try to create Firebase Auth user OR use existing one
+                do {
+                    authResult = try await Auth.auth().createUser(withEmail: email, password: password)
+                    uid = authResult!.user.uid
+                    print("✅ Created new Firebase Auth user: \(uid)")
+                } catch let authError as NSError {
+                    // Check if user already exists
+                    if authError.code == AuthErrorCode.emailAlreadyInUse.rawValue {
+                        print("⚠️ User already exists in Firebase Auth, signing in to get UID...")
+                        
+                        // Sign in to get the UID
+                        let signInResult = try await Auth.auth().signIn(withEmail: email, password: password)
+                        uid = signInResult.user.uid
+                        print("✅ Using existing Firebase Auth user: \(uid)")
+                        
+                        statusMessage = "ℹ️ Note: Firebase Auth user already existed, creating/updating Firestore document..."
+                    } else {
+                        // Different auth error, re-throw it
+                        throw authError
+                    }
+                }
                 
-                // 2. Create User document in Firestore
+                // 2. Generate initials from full name
+                let initials = fullName
+                    .components(separatedBy: " ")
+                    .compactMap { $0.first }
+                    .map { String($0).uppercased() }
+                    .joined()
+                
+                // 3. Create User document in Firestore with ALL required fields
                 let db = Firestore.firestore()
                 
                 let superAdminData: [String: Any] = [
                     "id": uid,
                     "email": email,
                     "fullName": fullName,
-                    "phoneNumber": phoneNumber,
-                    "role": "superAdmin",
+                    "initials": initials.isEmpty ? "SA" : initials,
+                    "phone": phoneNumber,
+                    "address": "GeoGuard Platform",
+                    "city": "Platform",
+                    "country": "Global",
+                    "vehicle": "N/A",
+                    "role": "super_admin",  // Must match UserRole.superAdmin.rawValue
                     "tenantId": "PLATFORM",
-                    "organizationId": "PLATFORM",
-                    "createdAt": Timestamp(date: Date()),
-                    "isActive": true
+                    "isActive": true,
+                    "createdAt": Timestamp(date: Date())
                 ]
                 
                 try await db.collection("users").document(uid).setData(superAdminData)
                 
                 print("✅ Created Firestore user document")
                 
-                // 3. Sign out (we don't want to be logged in as this user yet)
+                // 4. Sign out (we don't want to be logged in as this user yet)
                 try Auth.auth().signOut()
                 
                 statusMessage = "✅ Super Admin account created successfully!\n\nEmail: \(email)\nUID: \(uid)\n\nYou can now log in using the Super Admin Login button."
@@ -162,8 +203,15 @@ struct SuperAdminSetupView: View {
                 password = ""
                 confirmPassword = ""
                 
-            } catch {
-                statusMessage = "❌ Failed to create super admin: \(error.localizedDescription)"
+            } catch let error as NSError {
+                // Better error handling
+                if error.domain == "FIRFirestoreErrorDomain" && error.code == 7 {
+                    statusMessage = "❌ Firestore permission denied.\n\nPlease update your Firestore rules to allow writes:\n\nGo to Firebase Console → Firestore Database → Rules\n\nAdd this temporarily:\nmatch /{document=**} {\n  allow write: if true;\n}\n\nThen try again. Remember to secure your rules after!"
+                } else if error.domain == "FIRAuthErrorDomain" && error.code == AuthErrorCode.emailAlreadyInUse.rawValue {
+                    statusMessage = "❌ Email already in use but couldn't verify password. Please delete the user from Firebase Console → Authentication → Users, or use the correct password."
+                } else {
+                    statusMessage = "❌ Failed to create super admin: \(error.localizedDescription)"
+                }
                 isSuccess = false
                 print("❌ Super admin creation error: \(error)")
             }

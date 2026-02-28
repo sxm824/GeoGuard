@@ -116,21 +116,21 @@ struct SuperAdminLoginView: View {
                 
                 guard let userData = try? userDoc.data(as: User.self) else {
                     errorMessage = "Failed to load user data"
-                    try await Auth.auth().signOut()
+                    try Auth.auth().signOut()
                     return
                 }
                 
                 // Check if user is super admin
                 guard userData.role == .superAdmin else {
                     errorMessage = "Access denied. Super admin privileges required."
-                    try await Auth.auth().signOut()
+                    try Auth.auth().signOut()
                     return
                 }
                 
                 // Verify account is active
                 guard userData.isActive else {
                     errorMessage = "This account has been deactivated."
-                    try await Auth.auth().signOut()
+                    try Auth.auth().signOut()
                     return
                 }
                 
