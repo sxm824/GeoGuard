@@ -324,6 +324,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = GeoGuard/Info.plist;
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "GeoGuard needs your location based services";
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "eoGuard needs your location to monitor geofences and provide location-based alerts";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "GeoGuard needs your location based services";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -359,6 +360,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = GeoGuard/Info.plist;
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "GeoGuard needs your location based services";
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "eoGuard needs your location to monitor geofences and provide location-based alerts";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "GeoGuard needs your location based services";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

@@ -45,7 +45,7 @@ struct RootView: View {
                 .transition(.opacity)
             
         case .fieldPersonnel:
-            FieldPersonnelDashboardView()
+            DriverDashboardView()  // ✅ Changed from FieldPersonnelDashboardView
                 .transition(.opacity)
         }
     }
@@ -138,31 +138,8 @@ struct ManagerDashboardView: View {
     }
 }
 
-struct FieldPersonnelDashboardView: View {
-    @EnvironmentObject var authService: AuthService
-    
-    var body: some View {
-        NavigationStack {
-            VStack {
-                Text("Field Personnel Dashboard")
-                    .font(.largeTitle)
-                    .bold()
-                
-                if let user = authService.currentUser {
-                    Text("Welcome, \(user.fullName)")
-                        .foregroundColor(.secondary)
-                }
-                
-                Button("Sign Out") {
-                    try? authService.signOut()
-                }
-                .buttonStyle(.bordered)
-                .padding()
-            }
-            .navigationTitle("Field View")
-        }
-    }
-}
+// Note: DriverDashboardView is used for field personnel (see roleBasedView)
+// It includes GPS tracking, alerts, and profile tabs
 
 // MARK: - Preview
 

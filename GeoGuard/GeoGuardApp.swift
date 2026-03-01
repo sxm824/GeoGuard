@@ -11,14 +11,8 @@ import GoogleMaps
 // import GooglePlaces
 import FirebaseCore
 
-// DISABLED: This entire file is disabled because ExampleGeoGuardApp.swift is the active entry point
-// To use this file instead:
-// 1. Uncomment @main below
-// 2. Comment out @main in ExampleGeoGuardApp.swift
-// 3. Make these views public (remove 'private' keywords)
 
-/*
-// @main
+@main
 struct GeoGuardApp: App {
     @StateObject private var authService = AuthService()
     
@@ -56,7 +50,10 @@ private struct GeoGuardRootView: View {
             } else if authService.isAuthenticated, let user = authService.currentUser {
                 // Authenticated - route by role
                 switch user.role {
-                case .admin, .superAdmin:
+                case .superAdmin:
+                    SuperAdminDashboardView()
+                        .environmentObject(authService)
+                case .admin:
                     AdminDashboardView()
                         .environmentObject(authService)
                 case .manager:
@@ -68,7 +65,7 @@ private struct GeoGuardRootView: View {
                 }
             } else {
                 // Not authenticated
-                GeoGuardLoginView()
+                LoginView()
             }
         }
     }
@@ -118,17 +115,11 @@ private struct GeoGuardManagerDashboardView: View {
     }
 }
 
-private struct GeoGuardLoginView: View {
-    @EnvironmentObject var authService: AuthService
-    
-    var body: some View {
-        Text("Login View - Placeholder")
-    }
-}
+// Login view is now in LoginView.swift - no placeholder needed
 
 #Preview {
     GeoGuardRootView()
         .environmentObject(AuthService())
 }
-*/
+
 

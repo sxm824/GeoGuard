@@ -238,11 +238,11 @@ struct CompanyRegistrationView: View {
                 }
             }
             .alert("Success!", isPresented: $registrationSuccess) {
-                Button("Continue") {
+                Button("OK") {
                     dismiss()
                 }
             } message: {
-                Text("Your company has been registered successfully!")
+                Text("Your organization has been registered successfully!\n\nPlease log in with your admin credentials to continue.")
             }
         }
     }
@@ -302,30 +302,44 @@ struct CompanyRegistrationView: View {
                     address: adminAddress,
                     city: adminCity,
                     country: adminCountry,
-                    vehicle: "N/A", // Not applicable for safety tracking
+                    vehicle: "N/A",
                     role: .admin,
                     isActive: true,
                     createdAt: Date()
                 )
+                
+                print("🔵 Creating user document for: \(userId)")
+                print("🔵 User data: \(adminUser.toDictionary())")
                 
                 try await Firestore.firestore()
                     .collection("users")
                     .document(userId)
                     .setData(adminUser.toDictionary())
                 
+                print("✅ User document created successfully")
+                
                 // 4. Mark license as used
                 if let licenseId = validatedLicense?.id {
+                    print("🔵 Marking license as used: \(licenseId)")
                     try await licenseService.markLicenseAsUsed(
                         licenseId: licenseId,
                         tenantId: tenantId,
                         organizationName: companyName
                     )
+                    print("✅ License marked as used")
                 }
+                
+                // 5. Sign out so user can log in fresh with their new account
+                print("🔵 Signing out user")
+                try Auth.auth().signOut()
+                print("✅ User signed out")
                 
                 // Success!
                 registrationSuccess = true
                 
             } catch {
+                print("❌ Company registration error: \(error)")
+                print("❌ Error details: \(error.localizedDescription)")
                 errorMessage = error.localizedDescription
             }
         }

@@ -47,10 +47,15 @@ class AuthService: ObservableObject {
     // MARK: - Load User Data
     
     func loadUserData(userId: String) async {
+        print("🔵 loadUserData called for userId: \(userId)")
         isLoading = true
-        defer { isLoading = false }
+        defer { 
+            isLoading = false
+            print("🔵 loadUserData finished, isLoading now: false")
+        }
         
         do {
+            print("🔵 Fetching user document...")
             let document = try await db.collection("users").document(userId).getDocument()
             
             guard document.exists else {
@@ -60,15 +65,25 @@ class AuthService: ObservableObject {
                 return
             }
             
+            print("🔵 User document exists, parsing data...")
             currentUser = try document.data(as: User.self)
             isAuthenticated = true
             
-            // Update last login
-            try await db.collection("users").document(userId).updateData([
-                "lastLoginAt": FieldValue.serverTimestamp()
-            ])
-            
             print("✅ Loaded user: \(currentUser?.fullName ?? "Unknown") (Tenant: \(currentUser?.tenantId ?? "None"))")
+            print("🔵 User role: \(currentUser?.role.rawValue ?? "unknown")")
+            print("🔵 isAuthenticated: \(isAuthenticated)")
+            
+            // Update last login - this might fail if rules aren't deployed
+            print("🔵 Attempting to update lastLoginAt...")
+            do {
+                try await db.collection("users").document(userId).updateData([
+                    "lastLoginAt": FieldValue.serverTimestamp()
+                ])
+                print("✅ Updated lastLoginAt successfully")
+            } catch {
+                print("⚠️ Could not update lastLoginAt (not critical): \(error.localizedDescription)")
+                // Don't fail the login if this fails
+            }
             
         } catch {
             print("❌ Error loading user data: \(error.localizedDescription)")

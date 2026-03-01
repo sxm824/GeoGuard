@@ -112,6 +112,27 @@ struct AdminDashboardView: View {
                 .font(.headline)
             
             VStack(spacing: 12) {
+                // Alert Center - New Feature!
+                NavigationLink {
+                    AdminAlertsDashboardView()
+                        .environmentObject(authService)
+                } label: {
+                    HStack {
+                        Image(systemName: "bell.badge.fill")
+                            .foregroundColor(.red)
+                        Text("Alert Center")
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding()
+                    .background(Color(.systemBackground))
+                    .cornerRadius(12)
+                    .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+                }
+                .buttonStyle(.plain)
+                
                 Button {
                     showingInvitationSheet = true
                 } label: {
