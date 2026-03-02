@@ -127,11 +127,20 @@ class InvitationService: ObservableObject {
     // MARK: - Mark Invitation as Used
     
     func markAsUsed(invitationId: String, userId: String) async throws {
-        try await db.collection("invitations").document(invitationId).updateData([
-            "isUsed": true,
-            "usedBy": userId,
-            "usedAt": FieldValue.serverTimestamp()
-        ])
+        print("🔵 Marking invitation as used: \(invitationId)")
+        print("   Used by: \(userId)")
+        
+        do {
+            try await db.collection("invitations").document(invitationId).updateData([
+                "isUsed": true,
+                "usedBy": userId,
+                "usedAt": FieldValue.serverTimestamp()
+            ])
+            print("✅ Invitation marked as used successfully")
+        } catch {
+            print("❌ Error marking invitation as used: \(error.localizedDescription)")
+            throw error
+        }
     }
     
     // MARK: - Get Invitations for Tenant

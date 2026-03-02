@@ -215,12 +215,25 @@ struct SignupView: View {
                     tenantId = invitation.tenantId
                     role = invitation.role
                     
+                    print("🔵 User signed up with invitation")
+                    print("   Invitation ID: \(invitation.id ?? "nil")")
+                    print("   Tenant ID: \(tenantId)")
+                    print("   Role: \(role.rawValue)")
+                    
                     // Mark invitation as used
                     if let invitationId = invitation.id {
-                        try await invitationService.markAsUsed(
-                            invitationId: invitationId,
-                            userId: userId
-                        )
+                        do {
+                            try await invitationService.markAsUsed(
+                                invitationId: invitationId,
+                                userId: userId
+                            )
+                            print("✅ Invitation marked as used")
+                        } catch {
+                            print("⚠️ Failed to mark invitation as used: \(error.localizedDescription)")
+                            // Don't fail the signup, but log the error
+                        }
+                    } else {
+                        print("⚠️ Invitation ID is nil, cannot mark as used")
                     }
                 } else {
                     // Check if email domain matches existing tenant

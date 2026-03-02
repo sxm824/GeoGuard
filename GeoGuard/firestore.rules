@@ -44,14 +44,20 @@ service cloud.firestore {
       allow create: if isOwner(userId) && 
                       request.resource.data.keys().hasAll(['email', 'fullName', 'tenantId', 'role', 'isActive']);
       
-      // Users can read their own data and data from users in the same tenant
+      // Users can read their own data, data from users in the same tenant,
+      // OR queries for initials checking during signup (before user document exists)
       allow read: if isOwner(userId) || 
                     (isAuthenticated() && sameTenant(resource.data.tenantId));
       
-      // Only admins can update user data
-      allow update: if isAuthenticated() && 
-                      sameTenant(resource.data.tenantId) && 
-                      hasAnyRole(['admin', 'super_admin']);
+      // Allow limited queries for initials checking during signup (before user document exists)
+      allow list: if isAuthenticated() && request.query.limit <= 1;
+      
+      // Users can update their own lastLoginAt field, admins can update everything
+      allow update: if (isOwner(userId) && 
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastLoginAt'])) ||
+                      (isAuthenticated() && 
+                       sameTenant(resource.data.tenantId) && 
+                       hasAnyRole(['admin', 'super_admin']));
       
       // Only admins can delete users
       allow delete: if isAuthenticated() && 
@@ -85,13 +91,10 @@ service cloud.firestore {
                       isManager();
       
       // Anyone can read (needed for signup validation)
-      // But we'll validate the code server-side
       allow read: if true;
       
-      // Admins and managers can update invitations
-      allow update: if isAuthenticated() && 
-                      sameTenant(resource.data.tenantId) && 
-                      isManager();
+      // Anyone authenticated can update (needed for marking as used during signup)
+      allow update: if isAuthenticated();
       
       // Admins and managers can delete invitations
       allow delete: if isAuthenticated() && 
@@ -106,8 +109,11 @@ service cloud.firestore {
                               isAuthenticated() && 
                               sameTenant(request.resource.data.tenantId);
       
-      // Users in the tenant can read locations
+      // Users in the tenant can read individual locations
       allow read: if isAuthenticated() && sameTenant(resource.data.tenantId);
+      
+      // Admins and managers can query all locations in their tenant
+      allow list: if isAuthenticated() && isManager();
       
       // Location history cannot be deleted
       allow delete: if false;

@@ -60,6 +60,11 @@ struct AdminDashboardView: View {
             } message: {
                 Text("Are you sure you want to sign out?")
             }
+            .onAppear {
+                Task {
+                    await viewModel.loadData(tenantId: authService.tenantId ?? "")
+                }
+            }
             .task {
                 await viewModel.loadData(tenantId: authService.tenantId ?? "")
             }
@@ -121,6 +126,27 @@ struct AdminDashboardView: View {
                         Image(systemName: "bell.badge.fill")
                             .foregroundColor(.red)
                         Text("Alert Center")
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding()
+                    .background(Color(.systemBackground))
+                    .cornerRadius(12)
+                    .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+                }
+                .buttonStyle(.plain)
+                
+                // Location Tracking
+                NavigationLink {
+                    AdminLocationTrackingView()
+                        .environmentObject(authService)
+                } label: {
+                    HStack {
+                        Image(systemName: "location.fill")
+                            .foregroundColor(.blue)
+                        Text("Track Field Personnel")
                         Spacer()
                         Image(systemName: "chevron.right")
                             .font(.caption)
@@ -386,13 +412,26 @@ class AdminDashboardViewModel: ObservableObject {
     
     private func loadUsers(tenantId: String) async {
         do {
+            print("🔵 Loading users for tenant: \(tenantId)")
             let snapshot = try await db.collection("users")
                 .whereField("tenantId", isEqualTo: tenantId)
-                .order(by: "createdAt", descending: true)
                 .getDocuments()
             
+            // Sort in memory after fetching
             users = snapshot.documents.compactMap { doc in
                 try? doc.data(as: User.self)
+            }.sorted { $0.createdAt > $1.createdAt }
+            
+            print("✅ Loaded \(users.count) users")
+            print("📊 User breakdown:")
+            print("   - Admins: \(users.filter { $0.role == .admin }.count)")
+            print("   - Field Personnel: \(users.filter { $0.role == .fieldPersonnel }.count)")
+            print("   - Managers: \(users.filter { $0.role == .manager }.count)")
+            print("   - Super Admins: \(users.filter { $0.role == .superAdmin }.count)")
+            
+            // Debug: Print each user's role
+            for user in users {
+                print("   👤 \(user.fullName): \(user.role.rawValue)")
             }
         } catch {
             print("❌ Error loading users: \(error)")
