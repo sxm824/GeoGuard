@@ -9,6 +9,7 @@ import Foundation
 import CoreLocation
 import FirebaseFirestore
 import Combine
+import UIKit
 
 @MainActor
 class LocationManager: NSObject, ObservableObject {
@@ -20,6 +21,7 @@ class LocationManager: NSObject, ObservableObject {
     @Published var batteryLevel: Float = 1.0
     @Published var queuedLocationCount: Int = 0
     @Published var lastSuccessfulSync: Date?
+    @Published var isLowPowerModeEnabled = false
     
     // MARK: - Private Properties
     private let locationManager = CLLocationManager()
@@ -70,6 +72,8 @@ class LocationManager: NSObject, ObservableObject {
         setupLocationManager()
         loadQueueFromDisk()
         monitorBatteryLevel()
+        startMonitoringAppState()
+        monitorLowPowerMode()
     }
     
     private func setupLocationManager() {
@@ -391,6 +395,135 @@ class LocationManager: NSObject, ObservableObject {
     
     var permissionDenied: Bool {
         authorizationStatus == .denied || authorizationStatus == .restricted
+    }
+    
+    // MARK: - App Lifecycle Monitoring
+    
+    func startMonitoringAppState() {
+        // Monitor when app goes to background
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appDidEnterBackground),
+            name: UIApplication.didEnterBackgroundNotification,
+            object: nil
+        )
+        
+        // Monitor when app becomes active
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appWillEnterForeground),
+            name: UIApplication.willEnterForegroundNotification,
+            object: nil
+        )
+        
+        // Monitor when app will terminate
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appWillTerminate),
+            name: UIApplication.willTerminateNotification,
+            object: nil
+        )
+    }
+    
+    @objc private func appDidEnterBackground() {
+        print("🔵 App entered background - ensuring tracking continues")
+        
+        // Enable significant location changes as backup
+        locationManager.startMonitoringSignificantLocationChanges()
+        
+        // Send heartbeat to indicate app is backgrounded
+        sendBackgroundHeartbeat()
+    }
+    
+    @objc private func appWillEnterForeground() {
+        print("🔵 App entering foreground - resuming normal tracking")
+        
+        // Resume normal tracking if it was paused
+        if isTracking && currentLocation == nil {
+            print("⚠️ Location tracking may have stopped - restarting")
+            locationManager.startUpdatingLocation()
+        }
+        
+        // Process any queued offline locations
+        processOfflineQueue()
+    }
+    
+    @objc private func appWillTerminate() {
+        print("🔵 App terminating - sending final location")
+        
+        // Send final location update before termination
+        if let location = currentLocation {
+            updateLocationToFirestore(location)
+        }
+        
+        // Mark in Firestore that app was terminated
+        markAppTerminated()
+    }
+    
+    // MARK: - Background Heartbeat
+    
+    private func sendBackgroundHeartbeat() {
+        guard let userId = userId, let tenantId = tenantId else { return }
+        
+        let heartbeat: [String: Any] = [
+            "userId": userId,
+            "tenantId": tenantId,
+            "appState": "background",
+            "timestamp": FieldValue.serverTimestamp(),
+            "isTracking": isTracking,
+            "lowPowerModeEnabled": ProcessInfo.processInfo.isLowPowerModeEnabled,
+            "batteryLevel": getBatteryLevel(),
+            "queuedLocations": queuedLocationCount
+        ]
+        
+        db.collection("app_heartbeats").document(userId).setData(heartbeat, merge: true) { error in
+            if let error = error {
+                print("❌ Failed to send heartbeat: \(error.localizedDescription)")
+            } else {
+                print("✅ Background heartbeat sent")
+            }
+        }
+    }
+    
+    private func markAppTerminated() {
+        guard let userId = userId else { return }
+        
+        db.collection("app_heartbeats").document(userId).updateData([
+            "appState": "terminated",
+            "terminatedAt": FieldValue.serverTimestamp()
+        ]) { error in
+            if error == nil {
+                print("✅ App termination recorded")
+            }
+        }
+    }
+    
+    // MARK: - Low Power Mode Detection
+    
+    func monitorLowPowerMode() {
+        // Set initial state
+        isLowPowerModeEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
+        
+        NotificationCenter.default.addObserver(
+            forName: .NSProcessInfoPowerStateDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self = self else { return }
+            
+            Task { @MainActor in
+                let wasEnabled = self.isLowPowerModeEnabled
+                self.isLowPowerModeEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
+                
+                if self.isLowPowerModeEnabled && !wasEnabled {
+                    print("⚠️ Low Power Mode ENABLED - tracking frequency will be reduced")
+                    self.error = "Low Power Mode enabled - location tracking will be less frequent to save battery"
+                } else if !self.isLowPowerModeEnabled && wasEnabled {
+                    print("✅ Low Power Mode DISABLED - normal tracking frequency resumed")
+                    self.error = nil
+                }
+            }
+        }
     }
 }
 

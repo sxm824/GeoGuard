@@ -12,6 +12,7 @@ struct DriverDashboardView: View {
     @EnvironmentObject var authService: AuthService
     @StateObject private var locationManager = LocationManager()
     @StateObject private var alertService = AlertService()
+    @StateObject private var reliabilityMonitor = TrackingReliabilityMonitor()
     @State private var showingSignOutAlert = false
     @State private var showingPermissionAlert = false
     @State private var selectedTab = 0
@@ -46,6 +47,9 @@ struct DriverDashboardView: View {
             startTrackingIfNeeded()
             startListeningForAlerts()
         }
+        .onDisappear {
+            reliabilityMonitor.stopMonitoring()
+        }
         .alert("Sign Out", isPresented: $showingSignOutAlert) {
             Button("Cancel", role: .cancel) { }
             Button("Sign Out", role: .destructive) {
@@ -66,6 +70,7 @@ struct DriverDashboardView: View {
                 // MARK: - Status Indicators (NEW)
                 LocationStatusView(
                     locationManager: locationManager,
+                    reliabilityMonitor: reliabilityMonitor,
                     showAllBanners: true,
                     showSyncTime: true
                 )
@@ -307,7 +312,17 @@ struct DriverDashboardView: View {
         guard let user = authService.currentUser else { return }
         
         if locationManager.hasAlwaysPermission && !locationManager.isTracking {
+            // Start location tracking
             locationManager.startTracking(userId: user.id!, tenantId: user.tenantId)
+            
+            // Start reliability monitoring
+            reliabilityMonitor.startMonitoring(
+                userId: user.id!,
+                tenantId: user.tenantId,
+                locationManager: locationManager
+            )
+            
+            print("✅ Location tracking and reliability monitoring started")
         } else if locationManager.needsPermission {
             showingPermissionAlert = true
         }

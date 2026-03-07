@@ -181,16 +181,77 @@ struct LastSyncIndicator: View {
     }
 }
 
+// MARK: - Tracking Reliability Banner
+
+struct TrackingReliabilityBanner: View {
+    @ObservedObject var monitor: TrackingReliabilityMonitor
+    
+    var body: some View {
+        if !monitor.isReliable, let issue = monitor.lastIssueDetected {
+            HStack(spacing: 12) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundColor(.red)
+                    .imageScale(.medium)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Tracking May Be Affected")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.red)
+                    
+                    Text(issue)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(2)
+                }
+                
+                Spacer()
+                
+                Button {
+                    // Open settings
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                } label: {
+                    Text("Fix")
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.red)
+                        .cornerRadius(8)
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 12)
+            .background(Color.red.opacity(0.1))
+            .overlay(
+                Rectangle()
+                    .frame(height: 1)
+                    .foregroundColor(Color.red.opacity(0.3)),
+                alignment: .bottom
+            )
+        }
+    }
+}
+
 // MARK: - Combined Location Status View
 
 struct LocationStatusView: View {
     @ObservedObject var locationManager: LocationManager
+    var reliabilityMonitor: TrackingReliabilityMonitor? = nil
     var showAllBanners: Bool = true
     var showSyncTime: Bool = true
     
     var body: some View {
         VStack(spacing: 0) {
-            // Offline banner (highest priority)
+            // Reliability warning (highest priority!)
+            if let monitor = reliabilityMonitor {
+                TrackingReliabilityBanner(monitor: monitor)
+            }
+            
+            // Offline banner
             if showAllBanners {
                 OfflineStatusBanner(locationManager: locationManager)
             }
