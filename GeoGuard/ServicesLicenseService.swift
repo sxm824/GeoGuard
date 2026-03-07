@@ -17,36 +17,52 @@ class LicenseService: ObservableObject {
     
     /// Validates a license key before allowing organization creation
     func validateLicense(key: String) async throws -> License {
+        print("🔑 LicenseService.validateLicense called with key: '\(key)'")
         let normalizedKey = key.uppercased().trimmingCharacters(in: .whitespaces)
+        print("🔑 Normalized key: '\(normalizedKey)'")
         
         // Query for license
+        print("🔵 Querying Firestore for license...")
         let snapshot = try await db.collection("licenses")
             .whereField("licenseKey", isEqualTo: normalizedKey)
             .limit(to: 1)
             .getDocuments()
         
+        print("🔵 Query returned \(snapshot.documents.count) documents")
+        
         guard let document = snapshot.documents.first else {
+            print("❌ License not found in database")
             throw LicenseError.notFound
         }
         
+        print("🔵 License document found: \(document.documentID)")
+        print("🔵 Document data: \(document.data())")
+        
         guard let license = try? document.data(as: License.self) else {
+            print("❌ Failed to decode license from document")
             throw LicenseError.invalidFormat
         }
         
+        print("🔵 License decoded successfully")
+        
         // Validate license status
         guard license.isActive else {
+            print("❌ License is inactive/revoked")
             throw LicenseError.revoked
         }
         
         guard !license.isUsed else {
+            print("❌ License has already been used")
             throw LicenseError.alreadyUsed
         }
         
         // Check expiration
         if let expiresAt = license.expiresAt, expiresAt < Date() {
+            print("❌ License has expired: \(expiresAt)")
             throw LicenseError.expired
         }
         
+        print("✅ License is valid!")
         return license
     }
     

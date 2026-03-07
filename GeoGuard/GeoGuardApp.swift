@@ -68,6 +68,15 @@ private struct GeoGuardRootView: View {
                 LoginView()
             }
         }
+        .errorAlert(authErrorBinding, title: "Authentication Error")
+    }
+    
+    // Helper to convert Binding<AuthError?> to Binding<Error?>
+    private var authErrorBinding: Binding<Error?> {
+        Binding(
+            get: { authService.authError },
+            set: { authService.authError = $0 as? AuthError }
+        )
     }
 }
 

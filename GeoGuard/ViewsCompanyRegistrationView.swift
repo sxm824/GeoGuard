@@ -12,6 +12,7 @@ import FirebaseFirestore
 struct CompanyRegistrationView: View {
     @StateObject private var tenantService = TenantService()
     @StateObject private var licenseService = LicenseService()
+    @EnvironmentObject private var authService: AuthService
     @Environment(\.dismiss) private var dismiss
     
     @State private var licenseKey = ""
@@ -253,10 +254,25 @@ struct CompanyRegistrationView: View {
             errorMessage = ""
             defer { isLoading = false }
             
+            print("🔑 Validating license key: \(licenseKey)")
+            
+            // Validate license key format first
+            let trimmedKey = licenseKey.trimmingCharacters(in: .whitespaces)
+            guard !trimmedKey.isEmpty else {
+                print("❌ License key is empty")
+                errorMessage = "Please enter a license key"
+                return
+            }
+            
             do {
+                print("🔵 Calling licenseService.validateLicense")
                 let license = try await licenseService.validateLicense(key: licenseKey)
+                print("✅ License validated successfully")
                 validatedLicense = license
             } catch {
+                print("❌ License validation error: \(error)")
+                print("❌ Error type: \(type(of: error))")
+                print("❌ Error localizedDescription: \(error.localizedDescription)")
                 errorMessage = error.localizedDescription
                 validatedLicense = nil
             }
@@ -272,23 +288,48 @@ struct CompanyRegistrationView: View {
             guard validateInputs() else { return }
             
             do {
-                // 1. Create Firebase Auth account for admin
+                // CRITICAL: Disable AuthStateListener to prevent race condition
+                // The listener would try to load user data immediately after createUser()
+                // but before we've created the Firestore document
+                authService.beginRegistration()
+                
+                // 1. Sign out first to ensure clean slate
+                print("🔵 Signing out any existing session")
+                try? Auth.auth().signOut()
+                
+                // 2. Create Firebase Auth account for admin
+                print("🔵 Creating Firebase Auth account")
                 let authResult = try await Auth.auth().createUser(
                     withEmail: adminEmail,
                     password: adminPassword
                 )
                 
                 let userId = authResult.user.uid
+                print("✅ Firebase Auth account created: \(userId)")
                 
-                // 2. Create tenant (company)
+                // 🔥 CRITICAL FIX: Force token refresh to ensure it's ready for Firestore
+                // Without this, Firestore security rules may fail because the token isn't ready
+                print("🔵 Forcing token refresh...")
+                _ = try await authResult.user.getIDToken(forcingRefresh: true)
+                print("✅ Token refreshed and ready")
+                
+                print("⚠️ User is now auto-signed in, but AuthStateListener is disabled")
+                
+                // 3. Create tenant (company)
+                print("🔵 Creating tenant")
+                print("🔵 Tenant will be created with adminUserId: \(userId)")
+                print("🔵 Auth.auth().currentUser?.uid: \(Auth.auth().currentUser?.uid ?? "nil")")
+                print("🔵 Are they equal? \(Auth.auth().currentUser?.uid == userId)")
+                
                 let tenantId = try await tenantService.createTenant(
                     name: companyName,
                     domain: companyDomain.isEmpty ? nil : companyDomain.lowercased(),
                     adminUserId: userId,
                     subscription: subscriptionTier
                 )
+                print("✅ Tenant created: \(tenantId)")
                 
-                // 3. Create admin user document
+                // 4. Create admin user document (WHILE AUTHENTICATED)
                 let baseInitials = getInitials(from: "\(adminFirstName) \(adminLastName)")
                 let initials = try await findUniqueInitials(baseInitials: baseInitials, tenantId: tenantId)
                 
@@ -309,16 +350,34 @@ struct CompanyRegistrationView: View {
                 )
                 
                 print("🔵 Creating user document for: \(userId)")
-                print("🔵 User data: \(adminUser.toDictionary())")
+                let userData = adminUser.toDictionary()
+                print("🔵 User data dictionary keys: \(userData.keys)")
+                print("🔵 User data full: \(userData)")
                 
                 try await Firestore.firestore()
                     .collection("users")
                     .document(userId)
-                    .setData(adminUser.toDictionary())
+                    .setData(userData)
                 
                 print("✅ User document created successfully")
                 
-                // 4. Mark license as used
+                // 5. Verify document was written by reading it back
+                print("🔵 Verifying user document exists")
+                let verifyDoc = try await Firestore.firestore()
+                    .collection("users")
+                    .document(userId)
+                    .getDocument()
+                
+                guard verifyDoc.exists else {
+                    throw NSError(
+                        domain: "GeoGuard",
+                        code: -1,
+                        userInfo: [NSLocalizedDescriptionKey: "User document failed to save"]
+                    )
+                }
+                print("✅ User document verified")
+                
+                // 6. Mark license as used
                 if let licenseId = validatedLicense?.id {
                     print("🔵 Marking license as used: \(licenseId)")
                     try await licenseService.markLicenseAsUsed(
@@ -329,18 +388,26 @@ struct CompanyRegistrationView: View {
                     print("✅ License marked as used")
                 }
                 
-                // 5. Sign out so user can log in fresh with their new account
-                print("🔵 Signing out user")
-                try Auth.auth().signOut()
-                print("✅ User signed out")
+                // 7. Re-enable AuthStateListener
+                authService.endRegistration()
                 
-                // Success!
+                // 8. Sign out so user can log in fresh with complete setup
+                print("🔵 Signing out to allow fresh login")
+                try Auth.auth().signOut()
+                print("✅ Signed out successfully")
+                
+                // Success! User can now log in and the document will exist
+                print("✅ Registration complete - ready for login")
                 registrationSuccess = true
                 
             } catch {
                 print("❌ Company registration error: \(error)")
                 print("❌ Error details: \(error.localizedDescription)")
                 errorMessage = error.localizedDescription
+                
+                // Re-enable listener and sign out on error
+                authService.endRegistration()
+                try? Auth.auth().signOut()
             }
         }
     }
@@ -425,23 +492,39 @@ struct CompanyRegistrationView: View {
         let db = Firestore.firestore()
         var counter = 0
         
+        print("🔵 Finding unique initials starting with: \(baseInitials)")
+        
         while true {
             let testInitials = counter == 0 ? baseInitials : "\(baseInitials)\(counter)"
             
+            print("🔵 Checking if '\(testInitials)' is available...")
             let snapshot = try await db.collection("users")
                 .whereField("tenantId", isEqualTo: tenantId)
                 .whereField("initials", isEqualTo: testInitials)
+                .limit(to: 1)  // CRITICAL: Required by Firestore rules!
                 .getDocuments()
             
             if snapshot.documents.isEmpty {
+                print("✅ Unique initials found: \(testInitials)")
                 return testInitials
             }
             
+            print("⚠️ '\(testInitials)' is taken, trying next...")
             counter += 1
+            
+            // Safety check to prevent infinite loop
+            if counter > 100 {
+                throw NSError(
+                    domain: "GeoGuard",
+                    code: -1,
+                    userInfo: [NSLocalizedDescriptionKey: "Unable to generate unique initials after 100 attempts"]
+                )
+            }
         }
     }
 }
 
 #Preview {
     CompanyRegistrationView()
+        .environmentObject(AuthService())
 }

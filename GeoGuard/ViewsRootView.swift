@@ -16,6 +16,9 @@ struct RootView: View {
             if authService.isLoading {
                 // Loading state
                 LoadingView()
+            } else if let authError = authService.authError {
+                // Authentication error - show error screen
+                AuthErrorView(error: authError)
             } else if authService.isAuthenticated, let user = authService.currentUser {
                 // User is authenticated - route based on role
                 roleBasedView(for: user)
@@ -47,6 +50,88 @@ struct RootView: View {
         case .fieldPersonnel:
             DriverDashboardView()  // ✅ Changed from FieldPersonnelDashboardView
                 .transition(.opacity)
+        }
+    }
+}
+
+// MARK: - Auth Error View
+
+struct AuthErrorView: View {
+    let error: AuthError
+    @EnvironmentObject var authService: AuthService
+    @State private var showingDiagnostics = false
+    
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+                // Error Icon
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 60))
+                    .foregroundColor(.orange)
+                    .padding(.top, 40)
+                
+                VStack(spacing: 12) {
+                    Text("Account Issue Detected")
+                        .font(.title2)
+                        .bold()
+                    
+                    if let errorDescription = error.errorDescription {
+                        Text(errorDescription)
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 32)
+                    }
+                    
+                    if let recoverySuggestion = error.recoverySuggestion {
+                        Text(recoverySuggestion)
+                            .font(.callout)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 32)
+                            .padding(.top, 8)
+                    }
+                }
+                
+                VStack(spacing: 16) {
+                    Button {
+                        showingDiagnostics = true
+                    } label: {
+                        Label("Run Diagnostics", systemImage: "wrench.and.screwdriver")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .padding(.horizontal, 32)
+                    
+                    Button {
+                        Task {
+                            try? authService.signOut()
+                        }
+                    } label: {
+                        Text("Sign Out")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .padding(.horizontal, 32)
+                }
+                .padding(.top, 24)
+                
+                Spacer()
+            }
+            .navigationTitle("Authentication Error")
+            .navigationBarTitleDisplayMode(.inline)
+            .sheet(isPresented: $showingDiagnostics) {
+                NavigationStack {
+                    UserAccountDiagnosticsView()
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("Close") {
+                                    showingDiagnostics = false
+                                }
+                            }
+                        }
+                }
+            }
         }
     }
 }

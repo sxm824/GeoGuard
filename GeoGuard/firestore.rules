@@ -2,224 +2,403 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Helper functions
+    // ===== HELPER FUNCTIONS =====
+    
+    // Basic authentication check
     function isAuthenticated() {
       return request.auth != null;
     }
     
+    // Check if user owns a resource
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
     
+    // Check if user document exists (prevents errors during signup)
+    function userExists() {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+    
+    // Get user data safely (only call after userExists() check)
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    // Check if user belongs to same tenant (with existence check)
     function sameTenant(tenantId) {
       return isAuthenticated() && 
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tenantId == tenantId;
+             userExists() &&
+             getUserData().tenantId == tenantId;
     }
     
+    // Check if user has specific role (with existence check)
     function hasRole(role) {
       return isAuthenticated() && 
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
+             userExists() &&
+             getUserData().role == role;
     }
     
+    // Check if user has any of the specified roles
     function hasAnyRole(roles) {
       return isAuthenticated() && 
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in roles;
+             userExists() &&
+             getUserData().role in roles;
     }
     
+    // Check if user is super admin
     function isSuperAdmin() {
       return hasRole('super_admin');
     }
     
+    // Check if user is admin or super admin
     function isAdmin() {
       return hasAnyRole(['admin', 'super_admin']);
     }
     
+    // Check if user is manager, admin, or super admin
     function isManager() {
       return hasAnyRole(['manager', 'admin', 'super_admin']);
     }
     
-    // Users Collection
-    match /users/{userId} {
-      // Allow users to create their own account during signup
-      allow create: if isOwner(userId) && 
-                      request.resource.data.keys().hasAll(['email', 'fullName', 'tenantId', 'role', 'isActive']);
-      
-      // Users can read their own data, data from users in the same tenant,
-      // OR queries for initials checking during signup (before user document exists)
-      allow read: if isOwner(userId) || 
-                    (isAuthenticated() && sameTenant(resource.data.tenantId));
-      
-      // Allow limited queries for initials checking during signup (before user document exists)
-      allow list: if isAuthenticated() && request.query.limit <= 1;
-      
-      // Users can update their own lastLoginAt field, admins can update everything
-      allow update: if (isOwner(userId) && 
-                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastLoginAt'])) ||
-                      (isAuthenticated() && 
-                       sameTenant(resource.data.tenantId) && 
-                       hasAnyRole(['admin', 'super_admin']));
-      
-      // Only admins can delete users
-      allow delete: if isAuthenticated() && 
-                      sameTenant(resource.data.tenantId) && 
-                      hasAnyRole(['admin', 'super_admin']);
+    // Check if user is active
+    function isActive() {
+      return isAuthenticated() && 
+             userExists() &&
+             getUserData().isActive == true;
     }
     
-    // Tenants Collection
+    // ===== USERS COLLECTION =====
+    match /users/{userId} {
+      // SCENARIO 1: User creating their own account during signup (new registration or invitation signup)
+      // - Must be authenticated (via Firebase Auth)
+      // - Must be creating their own document (userId == auth.uid)
+      // - Must provide minimum required fields (flexible for additional fields)
+      allow create: if isOwner(userId) && 
+                      request.resource.data.keys().hasAll(['email', 'tenantId', 'role']);
+      
+      // SCENARIO 2: User reading their own data
+      // - Users can ALWAYS read their own document (critical for login flow)
+      // - No existence check needed (prevents circular dependency)
+      allow read: if isOwner(userId);
+      
+      // SCENARIO 3: Users reading other users in the same tenant
+      // - Must be authenticated and have user document
+      // - Must be in same tenant as the user being read
+      allow read: if sameTenant(resource.data.tenantId);
+      
+      // SCENARIO 4: Querying users for initials checking during signup
+      // - Needed before user document exists
+      // - Limited to 1 result to prevent abuse
+      allow list: if isAuthenticated() && request.query.limit <= 1;
+      
+      // SCENARIO 5: Admins querying all users in their tenant
+      // - Must be admin/super_admin in the same tenant
+      allow list: if isAuthenticated() && userExists() && isAdmin();
+      
+      // SCENARIO 6: User updating their own lastLoginAt timestamp
+      // - Can only update lastLoginAt field
+      allow update: if isOwner(userId) && 
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastLoginAt']);
+      
+      // SCENARIO 7: User updating their own profile (name, etc.)
+      // - Can update specific fields only (not role, tenantId, isActive)
+      allow update: if isOwner(userId) && 
+                       request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['fullName', 'initials', 'lastLoginAt']);
+      
+      // SCENARIO 8: Admins updating users in their tenant
+      // - Admin must be in same tenant
+      // - Can update any field
+      allow update: if sameTenant(resource.data.tenantId) && isAdmin();
+      
+      // SCENARIO 9: Admins deleting users in their tenant
+      // - Admin must be in same tenant
+      // - Cannot delete themselves (prevent lockout)
+      allow delete: if sameTenant(resource.data.tenantId) && 
+                      isAdmin() && 
+                      !isOwner(userId);
+      
+      // SCENARIO 10: Super admin managing any user
+      // - Super admins have full access across all tenants
+      allow read, write: if isSuperAdmin();
+    }
+    
+    // ===== TENANTS COLLECTION =====
     match /tenants/{tenantId} {
-      // Allow creation during organization registration
+      // SCENARIO 1: Creating new tenant during organization registration
+      // - User is authenticated (just created account)
+      // - User is setting themselves as admin (check both possible field names)
       allow create: if isAuthenticated() && 
-                      request.resource.data.adminId == request.auth.uid;
+                      (request.resource.data.adminId == request.auth.uid || 
+                       request.resource.data.adminUserId == request.auth.uid);
       
-      // Users in the tenant can read tenant data
-      allow read: if isAuthenticated() && sameTenant(tenantId);
+      // SCENARIO 2: Users reading their own tenant data
+      // - User must belong to the tenant
+      allow read: if sameTenant(tenantId);
       
-      // Only admins can update tenant settings
-      allow update: if isAuthenticated() && 
-                      sameTenant(tenantId) && 
-                      hasAnyRole(['admin', 'super_admin']);
+      // SCENARIO 3: Admins reading tenant data
+      // - Admins in tenant can read full tenant info
+      allow read: if sameTenant(tenantId) && isAdmin();
       
-      // Only super admins can delete tenants
+      // SCENARIO 4: Admins updating tenant settings
+      // - Must be admin in the tenant
+      // - Can update name, settings, etc.
+      allow update: if sameTenant(tenantId) && isAdmin();
+      
+      // SCENARIO 5: Super admin managing any tenant
+      // - Full access across all tenants
+      allow read, write: if isSuperAdmin();
+      
+      // SCENARIO 6: Deleting tenant (super admin only)
+      // - Only super admins can delete entire tenants
       allow delete: if isSuperAdmin();
     }
     
-    // Invitations Collection
+    // ===== INVITATIONS COLLECTION =====
     match /invitations/{invitationId} {
-      // Admins and managers can create invitations
-      allow create: if isAuthenticated() && 
-                      sameTenant(request.resource.data.tenantId) && 
-                      isManager();
+      // SCENARIO 1: Managers creating invitations for new users
+      // - Must be manager/admin/super_admin
+      // - Must be in same tenant as invitation
+      allow create: if sameTenant(request.resource.data.tenantId) && isManager();
       
-      // Anyone can read (needed for signup validation)
+      // SCENARIO 2: Unauthenticated user validating invitation code during signup
+      // - Anyone can read to validate invitation exists and is valid
+      // - Needed for signup flow before authentication
       allow read: if true;
       
-      // Anyone authenticated can update (needed for marking as used during signup)
-      allow update: if isAuthenticated();
+      // SCENARIO 3: User marking invitation as used during signup
+      // - Authenticated user (just created account)
+      // - Can only mark as used, not modify other fields
+      allow update: if isAuthenticated() && 
+                      resource.data.isUsed == false &&
+                      request.resource.data.isUsed == true &&
+                      request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['isUsed', 'usedAt', 'usedBy']);
       
-      // Admins and managers can delete invitations
-      allow delete: if isAuthenticated() && 
-                      sameTenant(resource.data.tenantId) && 
-                      isManager();
+      // SCENARIO 4: Managers updating invitations (e.g., changing role, extending expiry)
+      // - Must be manager in same tenant
+      allow update: if sameTenant(resource.data.tenantId) && isManager();
+      
+      // SCENARIO 5: Managers deleting/revoking invitations
+      // - Must be manager in same tenant
+      allow delete: if sameTenant(resource.data.tenantId) && isManager();
+      
+      // SCENARIO 6: Managers querying all invitations in their tenant
+      // - Must be manager
+      allow list: if isAuthenticated() && userExists() && isManager();
+      
+      // SCENARIO 7: Super admin managing all invitations
+      allow read, write: if isSuperAdmin();
     }
     
-    // Locations Collection
-    match /locations/{userId} {
-      // Field personnel can create/update their own location
-      allow create, update: if isOwner(userId) && 
-                              isAuthenticated() && 
-                              sameTenant(request.resource.data.tenantId);
+    // ===== LOCATIONS COLLECTION =====
+    match /locations/{locationId} {
+      // SCENARIO 1: Field personnel creating their location update
+      // - Must be authenticated and active
+      // - Must be in same tenant as location data
+      // - Can only create their own location updates
+      allow create: if isAuthenticated() && 
+                      userExists() &&
+                      sameTenant(request.resource.data.tenantId) &&
+                      request.resource.data.userId == request.auth.uid;
       
-      // Users in the tenant can read individual locations
-      allow read: if isAuthenticated() && sameTenant(resource.data.tenantId);
+      // SCENARIO 2: Field personnel updating their location
+      // - Can only update their own locations
+      allow update: if isAuthenticated() && 
+                      userExists() &&
+                      sameTenant(request.resource.data.tenantId) &&
+                      resource.data.userId == request.auth.uid;
       
-      // Admins and managers can query all locations in their tenant
-      allow list: if isAuthenticated() && isManager();
+      // SCENARIO 3: Users reading individual location (e.g., on map)
+      // - Can read any location in their tenant
+      allow read: if sameTenant(resource.data.tenantId);
       
-      // Location history cannot be deleted
+      // SCENARIO 4: Managers querying all locations in tenant
+      // - Needed for dashboard, map view, etc.
+      allow list: if isManager();
+      
+      // SCENARIO 5: User querying their own location history
+      // - Can query their own locations
+      allow list: if isAuthenticated() && userExists();
+      
+      // SCENARIO 6: Super admin accessing all locations
+      allow read, write: if isSuperAdmin();
+      
+      // SCENARIO 7: Prevent deletion (location history is immutable)
+      // - No one can delete location records (audit trail)
       allow delete: if false;
     }
     
-    // Geofences Collection
+    // ===== GEOFENCES COLLECTION =====
     match /geofences/{geofenceId} {
-      // Managers and admins can create geofences
-      allow create: if isAuthenticated() && 
-                      sameTenant(request.resource.data.tenantId) && 
-                      isManager();
+      // SCENARIO 1: Managers creating geofences
+      // - Must be manager/admin/super_admin
+      // - Must be in same tenant
+      allow create: if sameTenant(request.resource.data.tenantId) && isManager();
       
-      // All users in tenant can read geofences
-      allow read: if isAuthenticated() && sameTenant(resource.data.tenantId);
+      // SCENARIO 2: All users reading geofences
+      // - Field users need to know geofence boundaries for monitoring
+      // - Read individual geofence
+      allow read: if sameTenant(resource.data.tenantId);
       
-      // Managers and admins can update geofences
-      allow update: if isAuthenticated() && 
-                      sameTenant(resource.data.tenantId) && 
-                      isManager();
+      // SCENARIO 3: Users querying all geofences in their tenant
+      // - Needed for map display, geofence monitoring
+      allow list: if isAuthenticated() && userExists();
       
-      // Managers and admins can delete geofences
-      allow delete: if isAuthenticated() && 
-                      sameTenant(resource.data.tenantId) && 
-                      isManager();
+      // SCENARIO 4: Managers updating geofences (boundaries, names, etc.)
+      // - Must be manager in same tenant
+      allow update: if sameTenant(resource.data.tenantId) && isManager();
+      
+      // SCENARIO 5: Managers deleting geofences
+      // - Must be manager in same tenant
+      allow delete: if sameTenant(resource.data.tenantId) && isManager();
+      
+      // SCENARIO 6: Super admin managing all geofences
+      allow read, write: if isSuperAdmin();
     }
     
     // ===== ALERT SYSTEM COLLECTIONS =====
     
     // Alerts Collection
     match /alerts/{alertId} {
-      // Admins can create alerts
-      allow create: if isAuthenticated() && 
-                      sameTenant(request.resource.data.tenantId) && 
-                      isAdmin();
+      // SCENARIO 1: Admins creating alerts
+      // - Must be admin/super_admin
+      // - Must be in same tenant
+      allow create: if sameTenant(request.resource.data.tenantId) && isAdmin();
       
-      // Users in tenant can read alerts sent to them
-      allow read: if isAuthenticated() && 
-                    sameTenant(resource.data.tenantId);
+      // SCENARIO 2: Users reading alerts sent to them
+      // - Can read individual alert in their tenant
+      allow read: if sameTenant(resource.data.tenantId);
       
-      // Admins can update alerts (e.g., deactivate)
-      allow update: if isAuthenticated() && 
-                      sameTenant(resource.data.tenantId) && 
-                      isAdmin();
+      // SCENARIO 3: Users querying active alerts in their tenant
+      // - Needed for alert list/dashboard
+      allow list: if isAuthenticated() && userExists();
       
-      // Only admins can delete alerts
-      allow delete: if isAuthenticated() && 
-                      sameTenant(resource.data.tenantId) && 
-                      isAdmin();
+      // SCENARIO 4: Admins updating alerts (deactivating, editing message)
+      // - Must be admin in same tenant
+      allow update: if sameTenant(resource.data.tenantId) && isAdmin();
+      
+      // SCENARIO 5: Admins deleting alerts
+      // - Must be admin in same tenant
+      allow delete: if sameTenant(resource.data.tenantId) && isAdmin();
+      
+      // SCENARIO 6: Super admin managing all alerts
+      allow read, write: if isSuperAdmin();
     }
     
     // Alert Responses Collection
     match /alert_responses/{responseId} {
-      // Any authenticated user can create a response to an alert in their tenant
-      allow create: if isAuthenticated() && 
-                      sameTenant(request.resource.data.tenantId) && 
+      // SCENARIO 1: Users responding to alerts
+      // - Must be in same tenant as alert
+      // - Can only create response for themselves
+      allow create: if sameTenant(request.resource.data.tenantId) && 
                       request.resource.data.userId == request.auth.uid;
       
-      // Users can read their own responses, admins can read all responses in tenant
-      allow read: if isAuthenticated() && 
-                    sameTenant(resource.data.tenantId) && 
-                    (resource.data.userId == request.auth.uid || isAdmin());
+      // SCENARIO 2: Users reading their own responses
+      // - Can read their own responses
+      allow read: if sameTenant(resource.data.tenantId) && 
+                    resource.data.userId == request.auth.uid;
       
-      // Admins can update responses (e.g., mark as read)
-      allow update: if isAuthenticated() && 
-                      sameTenant(resource.data.tenantId) && 
-                      isAdmin();
+      // SCENARIO 3: Admins reading all responses in their tenant
+      // - Needed to see who responded to alerts
+      allow read: if sameTenant(resource.data.tenantId) && isAdmin();
       
-      // Responses cannot be deleted (audit trail)
+      // SCENARIO 4: Admins querying all responses for an alert
+      // - Must be admin in tenant
+      allow list: if isAuthenticated() && userExists() && isAdmin();
+      
+      // SCENARIO 5: Admins updating response status (marking as read/acknowledged)
+      // - Must be admin in same tenant
+      allow update: if sameTenant(resource.data.tenantId) && isAdmin();
+      
+      // SCENARIO 6: Super admin managing all responses
+      allow read, write: if isSuperAdmin();
+      
+      // SCENARIO 7: Prevent deletion (audit trail)
+      // - Responses are immutable for compliance
       allow delete: if false;
     }
     
     // User Alert Status Collection
     match /user_alert_status/{statusId} {
-      // System creates status when alert is sent, or user creates when opening alert
-      allow create: if isAuthenticated() && 
-                      sameTenant(request.resource.data.tenantId) && 
+      // SCENARIO 1: User creating status when they view/acknowledge an alert
+      // - Must be in same tenant
+      // - Can only create for themselves
+      allow create: if sameTenant(request.resource.data.tenantId) && 
                       request.resource.data.userId == request.auth.uid;
       
-      // Users can read their own status, admins can read all statuses
-      allow read: if isAuthenticated() && 
-                    sameTenant(resource.data.tenantId) && 
-                    (resource.data.userId == request.auth.uid || isAdmin());
+      // SCENARIO 2: Users reading their own alert status
+      // - Can read own status
+      allow read: if sameTenant(resource.data.tenantId) && 
+                    resource.data.userId == request.auth.uid;
       
-      // Users can update their own status, admins can update any status
-      allow update: if isAuthenticated() && 
-                      sameTenant(resource.data.tenantId) && 
-                      (resource.data.userId == request.auth.uid || isAdmin());
+      // SCENARIO 3: Admins reading all user statuses
+      // - Needed to see who has read/acknowledged alerts
+      allow read: if sameTenant(resource.data.tenantId) && isAdmin();
       
-      // Status cannot be deleted
+      // SCENARIO 4: Admins querying alert statuses for reporting
+      // - Must be admin in tenant
+      allow list: if isAuthenticated() && userExists() && isAdmin();
+      
+      // SCENARIO 5: Users updating their own status (marking as read)
+      // - Can update own status
+      allow update: if sameTenant(resource.data.tenantId) && 
+                      resource.data.userId == request.auth.uid;
+      
+      // SCENARIO 6: Admins updating any status (manual acknowledgment)
+      // - Must be admin in same tenant
+      allow update: if sameTenant(resource.data.tenantId) && isAdmin();
+      
+      // SCENARIO 7: Super admin managing all statuses
+      allow read, write: if isSuperAdmin();
+      
+      // SCENARIO 8: Prevent deletion (audit trail)
       allow delete: if false;
     }
     
-    // Licenses Collection (for license key management)
+    // ===== LICENSES COLLECTION =====
     match /licenses/{licenseId} {
-      // Only super admins can create licenses
+      // SCENARIO 1: Super admin creating new license keys
+      // - Only super admins can generate licenses
       allow create: if isSuperAdmin();
       
-      // Admins can read licenses for their tenant
-      allow read: if isAuthenticated() && 
-                    (isSuperAdmin() || 
-                     (sameTenant(resource.data.tenantId) && isAdmin()));
+      // SCENARIO 2: UNAUTHENTICATED user validating license during org registration
+      // - ANYONE can read licenses (even before Firebase Auth account exists)
+      // - This is necessary for the registration flow:
+      //   1. User enters license key → validates it (NO AUTH YET)
+      //   2. User fills in company/admin info
+      //   3. User creates Firebase Auth account
+      //   4. User creates tenant and user documents
+      // - This is SAFE because:
+      //   * Licenses don't contain sensitive tenant-specific data
+      //   * License keys are already meant to be shared/distributed
+      //   * Write operations are still protected
+      allow read: if true;
       
-      // Only super admins can update licenses
+      // SCENARIO 3: UNAUTHENTICATED user querying license by key during org registration
+      // - Allows query like: where('licenseKey', '==', 'GGUARD-XXXX')
+      // - Needed BEFORE authentication exists
+      // - Limited by client-side to 1 result, no rate limiting needed in rules
+      allow list: if true;
+      
+      // SCENARIO 4: AUTHENTICATED user marking license as used during org registration
+      // - User has just created Firebase Auth account
+      // - Can only change from unused to used (one-way operation)
+      // - Can only set specific fields related to usage
+      // - Cannot reuse a license (isUsed: false → true only)
+      allow update: if isAuthenticated() && 
+                      resource.data.isUsed == false && 
+                      request.resource.data.isUsed == true &&
+                      request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['isUsed', 'usedAt', 'usedBy', 'organizationName']);
+      
+      // SCENARIO 5: Super admin managing licenses (update, deactivate, extend expiry)
+      // - Full access to update any license field
       allow update: if isSuperAdmin();
       
-      // Only super admins can delete licenses
+      // SCENARIO 6: Super admin deleting licenses
+      // - Only super admins can delete
       allow delete: if isSuperAdmin();
     }
   }

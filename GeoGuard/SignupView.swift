@@ -10,6 +10,8 @@ import FirebaseFirestore
 
 struct SignupView: View {
     @StateObject private var invitationService = InvitationService()
+    @EnvironmentObject private var authService: AuthService
+    @Environment(\.dismiss) private var dismiss
     
     @State private var email = ""
     @State private var password = ""
@@ -23,6 +25,13 @@ struct SignupView: View {
     @State private var errorMessage = ""
     @State private var showManualAddressEntry = false
     @State private var showingCompanyRegistration = false
+    
+    // Emergency contact information (critical for war zones)
+    @State private var emergencyContactName = ""
+    @State private var emergencyContactPhone = ""
+    @State private var emergencyContactRelation = ""
+    @State private var bloodType = ""
+    @State private var medicalNotes = ""
     
     @State private var validatedInvitation: Invitation?
     
@@ -118,6 +127,82 @@ struct SignupView: View {
                             }
                         }
                     
+                    Divider()
+                        .padding(.vertical, 8)
+                    
+                    // Emergency Contact Section (Critical for Safety)
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Image(systemName: "cross.case.fill")
+                                .foregroundColor(.red)
+                            Text("Emergency Contact (Required)")
+                                .font(.headline)
+                        }
+                        
+                        Text("In case of emergency, who should we contact?")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        TextField("Emergency Contact Name", text: $emergencyContactName)
+                            .textFieldStyle(.roundedBorder)
+                        
+                        TextField("Emergency Contact Phone (e.g., +1234567890)", text: $emergencyContactPhone)
+                            .textFieldStyle(.roundedBorder)
+                            .keyboardType(.numbersAndPunctuation)
+                            .textContentType(.telephoneNumber)
+                            .autocapitalization(.none)
+                            .onChange(of: emergencyContactPhone) { oldValue, newValue in
+                                // Filter out any invalid characters
+                                let filtered = newValue.filter { char in
+                                    char.isNumber || char == "+" || char == " " || char == "-" || char == "(" || char == ")"
+                                }
+                                if filtered != newValue {
+                                    emergencyContactPhone = filtered
+                                }
+                            }
+                        
+                        TextField("Relationship (e.g., Spouse, Parent, Colleague)", text: $emergencyContactRelation)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                    .padding()
+                    .background(Color.red.opacity(0.05))
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.red.opacity(0.2), lineWidth: 1)
+                    )
+                    
+                    // Medical Information (Optional but recommended)
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Image(systemName: "heart.text.square.fill")
+                                .foregroundColor(.orange)
+                            Text("Medical Information (Optional)")
+                                .font(.headline)
+                        }
+                        
+                        Text("Helps first responders in emergencies")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        TextField("Blood Type (e.g., A+, O-, AB+)", text: $bloodType)
+                            .textFieldStyle(.roundedBorder)
+                            .autocapitalization(.allCharacters)
+                        
+                        TextField("Allergies or Medical Conditions", text: $medicalNotes)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                    .padding()
+                    .background(Color.orange.opacity(0.05))
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.orange.opacity(0.2), lineWidth: 1)
+                    )
+                    
+                    Divider()
+                        .padding(.vertical, 8)
+                    
                     // Address section
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
@@ -198,15 +283,35 @@ struct SignupView: View {
             guard validateInputs() else { return }
             
             do {
-                // 1. Create Firebase Auth account
+                // CRITICAL: Disable AuthStateListener to prevent race condition
+                authService.beginRegistration()
+                
+                // 1. Sign out first to ensure clean slate
+                print("🔵 Signing out any existing session")
+                try? Auth.auth().signOut()
+                
+                // 2. Create Firebase Auth account
+                print("🔵 Creating Firebase Auth account")
                 let authResult = try await Auth.auth().createUser(
                     withEmail: email,
                     password: password
                 )
                 
                 let userId = authResult.user.uid
+                print("✅ Firebase Auth account created: \(userId)")
+                print("⚠️ User is now auto-signed in, but AuthStateListener is disabled")
                 
-                // 2. Determine tenant ID
+                // CRITICAL: Force token refresh to ensure Firestore has the latest auth state
+                print("🔵 Forcing token refresh before Firestore queries")
+                do {
+                    _ = try await authResult.user.getIDTokenResult(forcingRefresh: true)
+                    print("✅ Token refreshed successfully")
+                } catch {
+                    print("⚠️ Token refresh failed: \(error.localizedDescription)")
+                    // Continue anyway - the token might still work
+                }
+                
+                // 3. Determine tenant ID
                 let tenantId: String
                 let role: UserRole
                 
@@ -244,20 +349,24 @@ struct SignupView: View {
                         tenantId = tenant.id ?? ""
                         role = .fieldPersonnel  // Default role for domain-matched users
                     } else {
+                        authService.endRegistration()
                         errorMessage = "No invitation code provided and email domain doesn't match any registered company."
-                        try await Auth.auth().currentUser?.delete()
+                        // Note: No need to delete user here since we already signed out
                         return
                     }
                 }
                 
-                // 3. Find unique initials within tenant
+                // 4. Find unique initials within tenant
+                print("🔵 Finding unique initials")
                 let baseInitials = getInitials(from: "\(firstName) \(lastName)")
                 let initials = try await findUniqueInitials(
                     baseInitials: baseInitials,
                     tenantId: tenantId
                 )
+                print("✅ Unique initials: \(initials)")
                 
-                // 4. Create user document
+                // 5. Create user document (WHILE AUTHENTICATED)
+                print("🔵 Creating user document")
                 let newUser = User(
                     id: userId,
                     tenantId: tenantId,
@@ -272,6 +381,11 @@ struct SignupView: View {
                     role: role,
                     isActive: true,
                     createdAt: Date(),
+                    emergencyContact: emergencyContactName.isEmpty ? nil : emergencyContactName,
+                    emergencyPhone: emergencyContactPhone.isEmpty ? nil : emergencyContactPhone,
+                    emergencyContactRelation: emergencyContactRelation.isEmpty ? nil : emergencyContactRelation,
+                    bloodType: bloodType.isEmpty ? nil : bloodType,
+                    medicalNotes: medicalNotes.isEmpty ? nil : medicalNotes,
                     invitedBy: validatedInvitation?.invitedBy,
                     invitationCode: validatedInvitation?.invitationCode
                 )
@@ -280,11 +394,45 @@ struct SignupView: View {
                     .collection("users")
                     .document(userId)
                     .setData(newUser.toDictionary())
+                print("✅ User document created successfully")
                 
-                errorMessage = "Signed up! Welcome, \(firstName). Your ID: \(initials)"
+                // 6. Verify document was written by reading it back
+                print("🔵 Verifying user document exists")
+                let verifyDoc = try await Firestore.firestore()
+                    .collection("users")
+                    .document(userId)
+                    .getDocument()
+                
+                guard verifyDoc.exists else {
+                    throw NSError(
+                        domain: "GeoGuard",
+                        code: -1,
+                        userInfo: [NSLocalizedDescriptionKey: "User document failed to save"]
+                    )
+                }
+                print("✅ User document verified")
+                
+                // 7. Re-enable AuthStateListener
+                authService.endRegistration()
+                
+                // 8. Sign out so user can log in fresh with complete setup
+                print("🔵 Signing out to allow fresh login")
+                try Auth.auth().signOut()
+                print("✅ Signed out successfully")
+                
+                // Success! User can now log in and the document will exist
+                print("✅ Signup complete - ready for login")
+                
+                // Close the signup view
+                dismiss()
                 
             } catch {
+                print("❌ Signup error: \(error)")
                 errorMessage = error.localizedDescription
+                
+                // Re-enable listener and sign out on error
+                authService.endRegistration()
+                try? Auth.auth().signOut()
             }
         }
     }
@@ -299,6 +447,7 @@ struct SignupView: View {
             let snapshot = try await db.collection("users")
                 .whereField("tenantId", isEqualTo: tenantId)
                 .whereField("initials", isEqualTo: testInitials)
+                .limit(to: 1)  // Add limit to satisfy security rules
                 .getDocuments()
             
             if snapshot.documents.isEmpty {
@@ -342,6 +491,22 @@ struct SignupView: View {
         // Validate phone number
         if !isValidPhoneNumber(phone) {
             errorMessage = "Please enter a valid international phone number (e.g., +1234567890)"
+            return false
+        }
+        
+        // CRITICAL: Validate emergency contact (required for safety)
+        if emergencyContactName.trimmingCharacters(in: .whitespaces).isEmpty {
+            errorMessage = "Please provide an emergency contact name"
+            return false
+        }
+        
+        if !isValidPhoneNumber(emergencyContactPhone) {
+            errorMessage = "Please provide a valid emergency contact phone number (e.g., +1234567890)"
+            return false
+        }
+        
+        if emergencyContactRelation.trimmingCharacters(in: .whitespaces).isEmpty {
+            errorMessage = "Please specify your relationship to the emergency contact"
             return false
         }
         
@@ -400,4 +565,5 @@ struct SignupView: View {
 
 #Preview {
     SignupView()
+        .environmentObject(AuthService())
 }

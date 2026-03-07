@@ -15,14 +15,24 @@ class AuthService: ObservableObject {
     @Published var currentUser: User?
     @Published var isAuthenticated = false
     @Published var isLoading = true
+    @Published var authError: AuthError?
     
     private let db = Firestore.firestore()
     private var authStateListener: AuthStateDidChangeListenerHandle?
+    
+    // Flag to temporarily disable auth state listener during registration
+    private var isRegistrationInProgress = false
     
     init() {
         // Listen for auth state changes
         authStateListener = Auth.auth().addStateDidChangeListener { [weak self] _, user in
             guard let self = self else { return }
+            
+            // Skip if registration is in progress
+            if self.isRegistrationInProgress {
+                print("⏸️ Auth state change detected but registration in progress - skipping")
+                return
+            }
             
             Task {
                 if let user = user {
@@ -38,6 +48,18 @@ class AuthService: ObservableObject {
         }
     }
     
+    // MARK: - Registration Control
+    
+    func beginRegistration() {
+        print("🔒 Registration started - AuthStateListener disabled")
+        isRegistrationInProgress = true
+    }
+    
+    func endRegistration() {
+        print("🔓 Registration ended - AuthStateListener enabled")
+        isRegistrationInProgress = false
+    }
+    
     deinit {
         if let listener = authStateListener {
             Auth.auth().removeStateDidChangeListener(listener)
@@ -49,6 +71,8 @@ class AuthService: ObservableObject {
     func loadUserData(userId: String) async {
         print("🔵 loadUserData called for userId: \(userId)")
         isLoading = true
+        authError = nil // Clear any previous errors
+        
         defer { 
             isLoading = false
             print("🔵 loadUserData finished, isLoading now: false")
@@ -60,8 +84,12 @@ class AuthService: ObservableObject {
             
             guard document.exists else {
                 print("⚠️ User document doesn't exist for UID: \(userId)")
+                authError = .userDocumentNotFound(userId: userId)
                 currentUser = nil
                 isAuthenticated = false
+                
+                // Sign out the Firebase Auth user since they don't have a valid user document
+                try? Auth.auth().signOut()
                 return
             }
             
@@ -87,6 +115,7 @@ class AuthService: ObservableObject {
             
         } catch {
             print("❌ Error loading user data: \(error.localizedDescription)")
+            authError = .loadUserDataFailed(error: error)
             currentUser = nil
             isAuthenticated = false
         }
@@ -142,3 +171,33 @@ extension AuthService {
         return currentUser?.role == .manager || isAdmin
     }
 }
+// MARK: - Auth Error Types
+
+enum AuthError: LocalizedError {
+    case userDocumentNotFound(userId: String)
+    case loadUserDataFailed(error: Error)
+    case signOutFailed(error: Error)
+    
+    var errorDescription: String? {
+        switch self {
+        case .userDocumentNotFound(let userId):
+            return "Your account setup is incomplete. Please contact your administrator.\n\nUser ID: \(userId)"
+        case .loadUserDataFailed(let error):
+            return "Failed to load user data: \(error.localizedDescription)"
+        case .signOutFailed(let error):
+            return "Failed to sign out: \(error.localizedDescription)"
+        }
+    }
+    
+    var recoverySuggestion: String? {
+        switch self {
+        case .userDocumentNotFound:
+            return "This usually happens when your account hasn't been properly set up. Contact your system administrator to complete your account setup."
+        case .loadUserDataFailed:
+            return "Please check your internet connection and try again. If the problem persists, contact support."
+        case .signOutFailed:
+            return "Please try again. If the problem persists, restart the app."
+        }
+    }
+}
+

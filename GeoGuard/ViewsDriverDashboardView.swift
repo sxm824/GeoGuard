@@ -62,18 +62,26 @@ struct DriverDashboardView: View {
     
     private var mapView: some View {
         NavigationStack {
-            VStack {
+            VStack(spacing: 0) {
+                // MARK: - Status Indicators (NEW)
+                LocationStatusView(
+                    locationManager: locationManager,
+                    showAllBanners: true,
+                    showSyncTime: true
+                )
+                
+                // MARK: - Map Content
                 if locationManager.hasAlwaysPermission {
                     // Show map with tracking indicator
                     ZStack(alignment: .topTrailing) {
                         // Only show the current user's location
                         if let userId = authService.currentUser?.id {
                             GoogleMapView(userId: userId, showOnlyUser: true)
-                                .edgesIgnoringSafeArea(.all)
+                                .edgesIgnoringSafeArea(.bottom)
                         }
                         
-                        // Tracking indicator
-                        if locationManager.isTracking {
+                        // Legacy tracking indicator (keep for redundancy)
+                        if locationManager.isTracking && locationManager.queuedLocationCount == 0 {
                             HStack(spacing: 8) {
                                 Circle()
                                     .fill(Color.green)
@@ -170,6 +178,43 @@ struct DriverDashboardView: View {
                         }
                     }
                     
+                    // NEW: Last Sync Status
+                    HStack {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                        Text("Last Sync")
+                        Spacer()
+                        LastSyncIndicator(
+                            locationManager: locationManager,
+                            style: .compact
+                        )
+                    }
+                    
+                    // NEW: Queue Status (if any)
+                    if locationManager.queuedLocationCount > 0 {
+                        HStack {
+                            Image(systemName: "tray.full.fill")
+                                .foregroundColor(.orange)
+                            Text("Queued Locations")
+                            Spacer()
+                            Text("\(locationManager.queuedLocationCount)")
+                                .foregroundColor(.orange)
+                                .fontWeight(.semibold)
+                        }
+                    }
+                    
+                    // NEW: Battery Status
+                    if locationManager.batteryLevel > 0 {
+                        HStack {
+                            Image(systemName: batteryIcon)
+                                .foregroundColor(batteryLevelColor)
+                            Text("Device Battery")
+                            Spacer()
+                            Text("\(Int(locationManager.batteryLevel * 100))%")
+                                .foregroundColor(batteryLevelColor)
+                                .fontWeight(.semibold)
+                        }
+                    }
+                    
                     HStack {
                         Image(systemName: "bell.fill")
                         Text("Alerts Responded")
@@ -225,6 +270,34 @@ struct DriverDashboardView: View {
             }
             .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.large)
+        }
+    }
+    
+    // MARK: - Helper Computed Properties
+    
+    private var batteryIcon: String {
+        switch locationManager.batteryLevel {
+        case 0..<0.10:
+            return "battery.0"
+        case 0.10..<0.25:
+            return "battery.25"
+        case 0.25..<0.50:
+            return "battery.50"
+        case 0.50..<0.75:
+            return "battery.75"
+        default:
+            return "battery.100"
+        }
+    }
+    
+    private var batteryLevelColor: Color {
+        switch locationManager.batteryLevel {
+        case 0..<0.10:
+            return .red
+        case 0.10..<0.20:
+            return .orange
+        default:
+            return .green
         }
     }
     

@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1024" height="1024" fill="#1E3A8A" rx="180"/>
+  
+  <!-- Radar Arc Rings (Faint) -->
+  <g opacity="0.15">
+    <circle cx="512" cy="512" r="450" fill="none" stroke="#60A5FA" stroke-width="2"/>
+    <circle cx="512" cy="512" r="380" fill="none" stroke="#60A5FA" stroke-width="2"/>
+    <circle cx="512" cy="512" r="310" fill="none" stroke="#60A5FA" stroke-width="2"/>
+  </g>
+  
+  <!-- Radar Scan Line (Faint) -->
+  <g opacity="0.2">
+    <line x1="512" y1="512" x2="512" y2="62" stroke="#3B82F6" stroke-width="3"/>
+    <line x1="512" y1="512" x2="850" y2="300" stroke="#3B82F6" stroke-width="2"/>
+  </g>
+  
+  <!-- Shield Background -->
+  <path d="M 512 150 
+           L 700 220 
+           Q 720 230 720 255
+           L 720 480
+           Q 720 650 512 820
+           Q 304 650 304 480
+           L 304 255
+           Q 304 230 324 220
+           L 512 150 Z" 
+        fill="#2563EB" 
+        stroke="#1E40AF" 
+        stroke-width="8"/>
+  
+  <!-- Shield Inner Gradient -->
+  <defs>
+    <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1E3A8A;stop-opacity:1" />
+    </linearGradient>
+    <radialGradient id="glowGradient" cx="50%" cy="50%">
+      <stop offset="0%" style="stop-color:#60A5FA;stop-opacity:0.6" />
+      <stop offset="100%" style="stop-color:#60A5FA;stop-opacity:0" />
+    </radialGradient>
+  </defs>
+  
+  <path d="M 512 180 
+           L 680 240 
+           Q 695 247 695 265
+           L 695 470
+           Q 695 620 512 770
+           Q 329 620 329 470
+           L 329 265
+           Q 329 247 344 240
+           L 512 180 Z" 
+        fill="url(#shieldGradient)"/>
+  
+  <!-- Shield Highlight -->
+  <path d="M 512 180 
+           L 680 240 
+           Q 695 247 695 265
+           L 695 350
+           Q 695 370 680 365
+           L 512 310
+           L 344 365
+           Q 329 370 329 350
+           L 329 265
+           Q 329 247 344 240
+           L 512 180 Z" 
+        fill="#60A5FA" 
+        opacity="0.3"/>
+  
+  <!-- Location PIN -->
+  <g transform="translate(512, 430)">
+    <!-- PIN Shadow -->
+    <ellipse cx="0" cy="180" rx="40" ry="15" fill="#000000" opacity="0.3"/>
+    
+    <!-- PIN Body -->
+    <path d="M 0 -80
+             C -50 -80 -90 -40 -90 10
+             C -90 70 0 160 0 160
+             C 0 160 90 70 90 10
+             C 90 -40 50 -80 0 -80 Z"
+          fill="#EF4444"
+          stroke="#991B1B"
+          stroke-width="6"/>
+    
+    <!-- PIN Inner Circle -->
+    <circle cx="0" cy="10" r="35" fill="#FCA5A5"/>
+    <circle cx="0" cy="10" r="25" fill="#DC2626"/>
+    
+    <!-- PIN Highlight -->
+    <ellipse cx="-15" cy="-5" rx="15" ry="20" fill="#FEE2E2" opacity="0.6"/>
+  </g>
+  
+  <!-- Radar Dots (Subtle) -->
+  <g opacity="0.4">
+    <circle cx="380" cy="320" r="8" fill="#60A5FA"/>
+    <circle cx="640" cy="280" r="6" fill="#60A5FA"/>
+    <circle cx="420" cy="450" r="7" fill="#60A5FA"/>
+    <circle cx="600" cy="520" r="5" fill="#60A5FA"/>
+  </g>
+  
+  <!-- Glow Effect Behind Shield -->
+  <circle cx="512" cy="450" r="300" fill="url(#glowGradient)" opacity="0.3"/>
+</svg>

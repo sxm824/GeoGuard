@@ -1,0 +1,323 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===== HELPER FUNCTIONS =====
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Safe super admin check with exists() to prevent errors
+    function isSuperAdmin() {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin';
+    }
+    
+    // Safe tenant check with super admin bypass
+    function sameTenant(tenantId) {
+      return isAuthenticated() && 
+             (
+               isSuperAdmin() ||  // Super admins bypass tenant checks
+               (
+                 exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                 get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tenantId == tenantId
+               )
+             );
+    }
+    
+    function hasRole(role) {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
+    }
+    
+    function hasAnyRole(roles) {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in roles;
+    }
+    
+    function isAdmin() {
+      return hasAnyRole(['admin', 'super_admin']);
+    }
+    
+    function isManager() {
+      return hasAnyRole(['manager', 'admin', 'super_admin']);
+    }
+    
+    // ===== USERS COLLECTION =====
+    match /users/{userId} {
+      // Super admins can read/write any user
+      allow read, write: if isSuperAdmin();
+      
+      // CRITICAL: Users can always read their own document
+      // This allows super admins to log in without circular dependency
+      allow read: if isOwner(userId);
+      
+      // Allow users to create their own account during signup
+      allow create: if isOwner(userId) && 
+                      request.resource.data.keys().hasAll(['email', 'fullName', 'tenantId', 'role', 'isActive']);
+      
+      // Users in the same tenant can read each other (with safety check)
+      allow read: if isAuthenticated() && 
+                    exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                    sameTenant(resource.data.tenantId);
+      
+      // Allow limited queries for initials checking during signup (before user document exists)
+      // This allows newly authenticated users to check for unique initials before their document is created
+      allow list: if isAuthenticated() && 
+                    request.query.limit <= 1 &&
+                    request.query.matches('tenantId') &&  // Must filter by tenant
+                    request.query.matches('initials');     // Must filter by initials
+      
+      // Users can update their own lastLoginAt field
+      allow update: if (isOwner(userId) && 
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastLoginAt']));
+      
+      // Admins can update users in their tenant
+      allow update: if isAuthenticated() && 
+                      exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                      sameTenant(resource.data.tenantId) && 
+                      hasAnyRole(['admin', 'super_admin']);
+      
+      // Only admins can delete users in their tenant
+      allow delete: if isAuthenticated() && 
+                      exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                      sameTenant(resource.data.tenantId) && 
+                      hasAnyRole(['admin', 'super_admin']);
+    }
+    
+    // ===== TENANTS COLLECTION =====
+    match /tenants/{tenantId} {
+      // Super admins have full access
+      allow read, write: if isSuperAdmin();
+      
+      // Allow creation during organization registration
+      allow create: if isAuthenticated() && 
+                      request.resource.data.adminId == request.auth.uid;
+      
+      // Users in the tenant can read tenant data
+      allow read: if isAuthenticated() && 
+                    exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                    sameTenant(tenantId);
+      
+      // Only admins can update tenant settings
+      allow update: if isAuthenticated() && 
+                      exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                      sameTenant(tenantId) && 
+                      hasAnyRole(['admin', 'super_admin']);
+      
+      // Only super admins can delete tenants
+      allow delete: if isSuperAdmin();
+    }
+    
+    // ===== INVITATIONS COLLECTION =====
+    match /invitations/{invitationId} {
+      // Super admins have full access
+      allow read, write: if isSuperAdmin();
+      
+      // Admins and managers can create invitations
+      allow create: if isAuthenticated() && 
+                      exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                      sameTenant(request.resource.data.tenantId) && 
+                      isManager();
+      
+      // Anyone can read (needed for signup validation)
+      allow read: if true;
+      
+      // Anyone authenticated can update (needed for marking as used during signup)
+      allow update: if isAuthenticated();
+      
+      // Admins and managers can delete invitations
+      allow delete: if isAuthenticated() && 
+                      exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                      sameTenant(resource.data.tenantId) && 
+                      isManager();
+    }
+    
+    // ===== LOCATIONS COLLECTION =====
+    match /locations/{userId} {
+      // Super admins have full access
+      allow read, write: if isSuperAdmin();
+      
+      // Field personnel can create/update their own location
+      allow create, update: if isOwner(userId) && 
+                              isAuthenticated() && 
+                              exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                              sameTenant(request.resource.data.tenantId);
+      
+      // Users in the tenant can read individual locations
+      allow read: if isAuthenticated() && 
+                    exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                    sameTenant(resource.data.tenantId);
+      
+      // Admins and managers can query all locations in their tenant
+      allow list: if isAuthenticated() && 
+                    exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                    isManager();
+      
+      // Location history cannot be deleted
+      allow delete: if false;
+    }
+    
+    // ===== GEOFENCES COLLECTION =====
+    match /geofences/{geofenceId} {
+      // Super admins have full access
+      allow read, write: if isSuperAdmin();
+      
+      // Managers and admins can create geofences
+      allow create: if isAuthenticated() && 
+                      exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                      sameTenant(request.resource.data.tenantId) && 
+                      isManager();
+      
+      // All users in tenant can read geofences
+      allow read: if isAuthenticated() && 
+                    exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                    sameTenant(resource.data.tenantId);
+      
+      // Managers and admins can update geofences
+      allow update: if isAuthenticated() && 
+                      exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                      sameTenant(resource.data.tenantId) && 
+                      isManager();
+      
+      // Managers and admins can delete geofences
+      allow delete: if isAuthenticated() && 
+                      exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                      sameTenant(resource.data.tenantId) && 
+                      isManager();
+    }
+    
+    // ===== ALERT SYSTEM COLLECTIONS =====
+    
+    // Alerts Collection
+    match /alerts/{alertId} {
+      // Super admins have full access
+      allow read, write: if isSuperAdmin();
+      
+      // Admins can create alerts
+      allow create: if isAuthenticated() && 
+                      exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                      sameTenant(request.resource.data.tenantId) && 
+                      isAdmin();
+      
+      // Users in tenant can read alerts sent to them
+      allow read: if isAuthenticated() && 
+                    exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                    sameTenant(resource.data.tenantId);
+      
+      // Admins can update alerts (e.g., deactivate)
+      allow update: if isAuthenticated() && 
+                      exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                      sameTenant(resource.data.tenantId) && 
+                      isAdmin();
+      
+      // Only admins can delete alerts
+      allow delete: if isAuthenticated() && 
+                      exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                      sameTenant(resource.data.tenantId) && 
+                      isAdmin();
+    }
+    
+    // Alert Responses Collection
+    match /alert_responses/{responseId} {
+      // Super admins have full access
+      allow read, write: if isSuperAdmin();
+      
+      // Any authenticated user can create a response to an alert in their tenant
+      allow create: if isAuthenticated() && 
+                      exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                      sameTenant(request.resource.data.tenantId) && 
+                      request.resource.data.userId == request.auth.uid;
+      
+      // Users can read their own responses, admins can read all responses in tenant
+      allow read: if isAuthenticated() && 
+                    exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                    sameTenant(resource.data.tenantId) && 
+                    (resource.data.userId == request.auth.uid || isAdmin());
+      
+      // Admins can update responses (e.g., mark as read)
+      allow update: if isAuthenticated() && 
+                      exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                      sameTenant(resource.data.tenantId) && 
+                      isAdmin();
+      
+      // Responses cannot be deleted (audit trail)
+      allow delete: if false;
+    }
+    
+    // User Alert Status Collection
+    match /user_alert_status/{statusId} {
+      // Super admins have full access
+      allow read, write: if isSuperAdmin();
+      
+      // System creates status when alert is sent, or user creates when opening alert
+      allow create: if isAuthenticated() && 
+                      exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                      sameTenant(request.resource.data.tenantId) && 
+                      request.resource.data.userId == request.auth.uid;
+      
+      // Users can read their own status, admins can read all statuses
+      allow read: if isAuthenticated() && 
+                    exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                    sameTenant(resource.data.tenantId) && 
+                    (resource.data.userId == request.auth.uid || isAdmin());
+      
+      // Users can update their own status, admins can update any status
+      allow update: if isAuthenticated() && 
+                      exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                      sameTenant(resource.data.tenantId) && 
+                      (resource.data.userId == request.auth.uid || isAdmin());
+      
+      // Status cannot be deleted
+      allow delete: if false;
+    }
+    
+    // ===== LICENSES COLLECTION =====
+    match /licenses/{licenseId} {
+      // Only super admins can create licenses
+      allow create: if isSuperAdmin();
+      
+      // Any authenticated user can read licenses (needed for validation during registration)
+      // This is safe because licenses don't contain sensitive data
+      allow get: if isAuthenticated();
+      
+      // Any authenticated user can query licenses (needed for license key validation)
+      // This allows users to validate license keys during organization registration
+      allow list: if isAuthenticated();
+      
+      // Only super admins can update licenses (except marking as used)
+      allow update: if isSuperAdmin();
+      
+      // Allow marking license as used during registration
+      // User must be authenticated and can only mark as used (not back to unused)
+      allow update: if isAuthenticated() && 
+                      resource.data.isUsed == false && 
+                      request.resource.data.isUsed == true &&
+                      request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['isUsed', 'usedAt', 'usedBy', 'organizationName']);
+      
+      // Only super admins can delete licenses
+      allow delete: if isSuperAdmin();
+    }
+    
+    // ===== AUDIT LOGS =====
+    match /audit_logs/{logId} {
+      // Super admins can read all logs
+      allow read: if isSuperAdmin();
+      
+      // Anyone authenticated can create logs (for tracking)
+      allow create: if isAuthenticated();
+      
+      // Logs cannot be updated or deleted (immutable audit trail)
+      allow update, delete: if false;
+    }
+  }
+}

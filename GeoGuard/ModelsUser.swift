@@ -27,6 +27,7 @@ struct User: Codable, Identifiable {
     // Safety & Emergency
     var emergencyContact: String?  // Emergency contact name
     var emergencyPhone: String?    // Emergency contact phone
+    var emergencyContactRelation: String?  // Relationship to emergency contact
     var bloodType: String?         // For medical emergencies
     var medicalNotes: String?      // Allergies, conditions, etc.
     
@@ -62,6 +63,10 @@ extension User {
         
         if let emergencyPhone = emergencyPhone {
             dict["emergencyPhone"] = emergencyPhone
+        }
+        
+        if let emergencyContactRelation = emergencyContactRelation {
+            dict["emergencyContactRelation"] = emergencyContactRelation
         }
         
         if let bloodType = bloodType {

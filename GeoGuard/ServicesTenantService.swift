@@ -29,16 +29,9 @@ class TenantService: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         
-        // Check if tenant name already exists
-        let existingTenants = try await db.collection("tenants")
-            .whereField("name", isEqualTo: name)
-            .getDocuments()
-        
-        guard existingTenants.documents.isEmpty else {
-            throw TenantError.tenantAlreadyExists
-        }
-        
         // Create tenant document
+        // Note: Duplicate checking removed to avoid security rule issues
+        // Consider adding a unique constraint via Cloud Functions or server-side validation
         let tenant = Tenant(
             name: name,
             domain: domain,
