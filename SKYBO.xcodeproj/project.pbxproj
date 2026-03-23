@@ -1,0 +1,472 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		3E13ADCD2F4E6E7800D45B68 /* GooglePlaces in Frameworks */ = {isa = PBXBuildFile; productRef = 3E13ADCC2F4E6E7800D45B68 /* GooglePlaces */; };
+		3E13ADCF2F4E6E7800D45B68 /* GooglePlacesSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 3E13ADCE2F4E6E7800D45B68 /* GooglePlacesSwift */; };
+		3EBB3AC82F4D2B34003E0403 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 3EBB3AC72F4D2B34003E0403 /* FirebaseAuth */; };
+		3EBB3ACA2F4D2B34003E0403 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 3EBB3AC92F4D2B34003E0403 /* FirebaseCore */; };
+		3EBB3ACC2F4D2B34003E0403 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 3EBB3ACB2F4D2B34003E0403 /* FirebaseFirestore */; };
+		3EEB58962F4D08860053B5C5 /* GoogleMaps in Frameworks */ = {isa = PBXBuildFile; productRef = 3EEB58952F4D08860053B5C5 /* GoogleMaps */; };
+		3EFC0BC82F4F9BE7005D3073 /* QUICKSTART.md in Resources */ = {isa = PBXBuildFile; fileRef = 3EFC0BC72F4F9BE7005D3073 /* QUICKSTART.md */; };
+		3EFC0BCA2F4F9C49005D3073 /* GITHUB_SETUP.md in Resources */ = {isa = PBXBuildFile; fileRef = 3EFC0BC92F4F9C49005D3073 /* GITHUB_SETUP.md */; };
+		3EFC0BCC2F4F9C64005D3073 /* PHASE1_COMPLETE.md in Resources */ = {isa = PBXBuildFile; fileRef = 3EFC0BCB2F4F9C64005D3073 /* PHASE1_COMPLETE.md */; };
+		3EFC0BCE2F4F9CA2005D3073 /* PRE_PUBLISH_CHECKLIST.md in Resources */ = {isa = PBXBuildFile; fileRef = 3EFC0BCD2F4F9CA2005D3073 /* PRE_PUBLISH_CHECKLIST.md */; };
+		3EFC0BD02F4F9D75005D3073 /* START_HERE.md in Resources */ = {isa = PBXBuildFile; fileRef = 3EFC0BCF2F4F9D75005D3073 /* START_HERE.md */; };
+		3EFC0BD22F4F9E9E005D3073 /* README_UPDATED.md in Resources */ = {isa = PBXBuildFile; fileRef = 3EFC0BD12F4F9E9E005D3073 /* README_UPDATED.md */; };
+		3EFC0BD42F4F9F1E005D3073 /* TERMINOLOGY_GUIDE.md in Resources */ = {isa = PBXBuildFile; fileRef = 3EFC0BD32F4F9F1E005D3073 /* TERMINOLOGY_GUIDE.md */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		3E1521C62F4D054800AF4C8C /* SKYBO.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SKYBO.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3EFC0BC72F4F9BE7005D3073 /* QUICKSTART.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = QUICKSTART.md; sourceTree = "<group>"; };
+		3EFC0BC92F4F9C49005D3073 /* GITHUB_SETUP.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = GITHUB_SETUP.md; sourceTree = "<group>"; };
+		3EFC0BCB2F4F9C64005D3073 /* PHASE1_COMPLETE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = PHASE1_COMPLETE.md; sourceTree = "<group>"; };
+		3EFC0BCD2F4F9CA2005D3073 /* PRE_PUBLISH_CHECKLIST.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = PRE_PUBLISH_CHECKLIST.md; sourceTree = "<group>"; };
+		3EFC0BCF2F4F9D75005D3073 /* START_HERE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = START_HERE.md; sourceTree = "<group>"; };
+		3EFC0BD12F4F9E9E005D3073 /* README_UPDATED.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README_UPDATED.md; sourceTree = "<group>"; };
+		3EFC0BD32F4F9F1E005D3073 /* TERMINOLOGY_GUIDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = TERMINOLOGY_GUIDE.md; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		3EBB3AC32F4D144C003E0403 /* Exceptions for "SKYBO" folder in "SKYBO" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 3E1521C52F4D054800AF4C8C /* SKYBO */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		3E1521C82F4D054800AF4C8C /* SKYBO */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				3EBB3AC32F4D144C003E0403 /* Exceptions for "SKYBO" folder in "SKYBO" target */,
+			);
+			path = SKYBO;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		3E1521C32F4D054800AF4C8C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3EEB58962F4D08860053B5C5 /* GoogleMaps in Frameworks */,
+				3EBB3ACC2F4D2B34003E0403 /* FirebaseFirestore in Frameworks */,
+				3EBB3ACA2F4D2B34003E0403 /* FirebaseCore in Frameworks */,
+				3E13ADCD2F4E6E7800D45B68 /* GooglePlaces in Frameworks */,
+				3EBB3AC82F4D2B34003E0403 /* FirebaseAuth in Frameworks */,
+				3E13ADCF2F4E6E7800D45B68 /* GooglePlacesSwift in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		3E1521BD2F4D054700AF4C8C = {
+			isa = PBXGroup;
+			children = (
+				3E1521C82F4D054800AF4C8C /* SKYBO */,
+				3E1521C72F4D054800AF4C8C /* Products */,
+				3EFC0BC72F4F9BE7005D3073 /* QUICKSTART.md */,
+				3EFC0BC92F4F9C49005D3073 /* GITHUB_SETUP.md */,
+				3EFC0BCB2F4F9C64005D3073 /* PHASE1_COMPLETE.md */,
+				3EFC0BCD2F4F9CA2005D3073 /* PRE_PUBLISH_CHECKLIST.md */,
+				3EFC0BCF2F4F9D75005D3073 /* START_HERE.md */,
+				3EFC0BD12F4F9E9E005D3073 /* README_UPDATED.md */,
+				3EFC0BD32F4F9F1E005D3073 /* TERMINOLOGY_GUIDE.md */,
+			);
+			sourceTree = "<group>";
+		};
+		3E1521C72F4D054800AF4C8C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				3E1521C62F4D054800AF4C8C /* SKYBO.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3E1521C52F4D054800AF4C8C /* SKYBO */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3E1521D12F4D054A00AF4C8C /* Build configuration list for PBXNativeTarget "SKYBO" */;
+			buildPhases = (
+				3E1521C22F4D054800AF4C8C /* Sources */,
+				3E1521C32F4D054800AF4C8C /* Frameworks */,
+				3E1521C42F4D054800AF4C8C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				3E1521C82F4D054800AF4C8C /* SKYBO */,
+			);
+			name = SKYBO;
+			packageProductDependencies = (
+				3EEB58952F4D08860053B5C5 /* GoogleMaps */,
+				3EBB3AC72F4D2B34003E0403 /* FirebaseAuth */,
+				3EBB3AC92F4D2B34003E0403 /* FirebaseCore */,
+				3EBB3ACB2F4D2B34003E0403 /* FirebaseFirestore */,
+				3E13ADCC2F4E6E7800D45B68 /* GooglePlaces */,
+				3E13ADCE2F4E6E7800D45B68 /* GooglePlacesSwift */,
+			);
+			productName = GeoGuard;
+			productReference = 3E1521C62F4D054800AF4C8C /* SKYBO.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		3E1521BE2F4D054700AF4C8C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2620;
+				LastUpgradeCheck = 2620;
+				TargetAttributes = {
+					3E1521C52F4D054800AF4C8C = {
+						CreatedOnToolsVersion = 26.2;
+					};
+				};
+			};
+			buildConfigurationList = 3E1521C12F4D054700AF4C8C /* Build configuration list for PBXProject "SKYBO" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 3E1521BD2F4D054700AF4C8C;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				3EEB58942F4D08860053B5C5 /* XCRemoteSwiftPackageReference "ios-maps-sdk" */,
+				3EBB3AC62F4D2B34003E0403 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				3E13ADCB2F4E6E7800D45B68 /* XCRemoteSwiftPackageReference "ios-places-sdk" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 3E1521C72F4D054800AF4C8C /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				3E1521C52F4D054800AF4C8C /* SKYBO */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		3E1521C42F4D054800AF4C8C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3EFC0BD22F4F9E9E005D3073 /* README_UPDATED.md in Resources */,
+				3EFC0BD02F4F9D75005D3073 /* START_HERE.md in Resources */,
+				3EFC0BCE2F4F9CA2005D3073 /* PRE_PUBLISH_CHECKLIST.md in Resources */,
+				3EFC0BCA2F4F9C49005D3073 /* GITHUB_SETUP.md in Resources */,
+				3EFC0BD42F4F9F1E005D3073 /* TERMINOLOGY_GUIDE.md in Resources */,
+				3EFC0BCC2F4F9C64005D3073 /* PHASE1_COMPLETE.md in Resources */,
+				3EFC0BC82F4F9BE7005D3073 /* QUICKSTART.md in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		3E1521C22F4D054800AF4C8C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		3E1521CF2F4D054A00AF4C8C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 8N8954DCXL;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		3E1521D02F4D054A00AF4C8C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 8N8954DCXL;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		3E1521D22F4D054A00AF4C8C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8N8954DCXL;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = GeoGuard/Info.plist;
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "GeoGuard needs your location based services";
+				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "eoGuard needs your location to monitor geofences and provide location-based alerts";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "GeoGuard needs your location based services";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.omarkby.skybo;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		3E1521D32F4D054A00AF4C8C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8N8954DCXL;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = GeoGuard/Info.plist;
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "GeoGuard needs your location based services";
+				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "eoGuard needs your location to monitor geofences and provide location-based alerts";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "GeoGuard needs your location based services";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.omarkby.skybo;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		3E1521C12F4D054700AF4C8C /* Build configuration list for PBXProject "SKYBO" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3E1521CF2F4D054A00AF4C8C /* Debug */,
+				3E1521D02F4D054A00AF4C8C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3E1521D12F4D054A00AF4C8C /* Build configuration list for PBXNativeTarget "SKYBO" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3E1521D22F4D054A00AF4C8C /* Debug */,
+				3E1521D32F4D054A00AF4C8C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		3E13ADCB2F4E6E7800D45B68 /* XCRemoteSwiftPackageReference "ios-places-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googlemaps/ios-places-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 10.8.0;
+			};
+		};
+		3EBB3AC62F4D2B34003E0403 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.9.0;
+			};
+		};
+		3EEB58942F4D08860053B5C5 /* XCRemoteSwiftPackageReference "ios-maps-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googlemaps/ios-maps-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 10.8.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		3E13ADCC2F4E6E7800D45B68 /* GooglePlaces */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3E13ADCB2F4E6E7800D45B68 /* XCRemoteSwiftPackageReference "ios-places-sdk" */;
+			productName = GooglePlaces;
+		};
+		3E13ADCE2F4E6E7800D45B68 /* GooglePlacesSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3E13ADCB2F4E6E7800D45B68 /* XCRemoteSwiftPackageReference "ios-places-sdk" */;
+			productName = GooglePlacesSwift;
+		};
+		3EBB3AC72F4D2B34003E0403 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3EBB3AC62F4D2B34003E0403 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		3EBB3AC92F4D2B34003E0403 /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3EBB3AC62F4D2B34003E0403 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		3EBB3ACB2F4D2B34003E0403 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3EBB3AC62F4D2B34003E0403 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		3EEB58952F4D08860053B5C5 /* GoogleMaps */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3EEB58942F4D08860053B5C5 /* XCRemoteSwiftPackageReference "ios-maps-sdk" */;
+			productName = GoogleMaps;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 3E1521BE2F4D054700AF4C8C /* Project object */;
+}
